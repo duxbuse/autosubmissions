@@ -1,7 +1,21 @@
 <template>
   <div class="form-builder">
     <h1>Form Builder</h1>
-    <div v-if="loading">Loading form...</div>
+    <div v-if="!mode">
+      <button @click="selectMode('new')">Create New Form</button>
+      <button @click="selectMode('edit')">Edit Existing Form</button>
+    </div>
+    <div v-else-if="mode === 'edit' && !formId">
+      <div>
+        <label>Select a form to edit:</label>
+        <select v-model="selectedFormId">
+          <option disabled value="">-- Select a form --</option>
+          <option v-for="f in availableForms" :key="f.id" :value="f.id">{{ f.name }}</option>
+        </select>
+        <button :disabled="!selectedFormId" @click="loadForm(selectedFormId)">Edit</button>
+        <button @click="mode = null">Back</button>
+      </div>
+    </div>
     <div v-else>
       <div class="form-meta">
         <label>
@@ -77,25 +91,47 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-const route = useRoute();
-const formId = route.params.id;
-const loading = ref(true);
+const mode = ref(null); // 'new' or 'edit'
+const formId = ref(null);
+const selectedFormId = ref("");
+const availableForms = ref([]);
+const loading = ref(false);
 const saving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref(false);
 const form = reactive({ name: '', description: '' });
 const questions = ref([]);
 
-const fetchForm = async () => {
+const selectMode = (m) => {
+  mode.value = m;
+  if (m === 'edit') {
+    fetchAvailableForms();
+  } else if (m === 'new') {
+    formId.value = 'new';
+    resetForm();
+  }
+};
+
+const fetchAvailableForms = async () => {
   loading.value = true;
   try {
-    const res = await axios.get(`${API_BASE}/api/forms/${formId}/`);
+    const res = await axios.get(`${API_BASE}/api/forms/`);
+    availableForms.value = res.data;
+  } catch (e) {
+    availableForms.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+const loadForm = async (id) => {
+  loading.value = true;
+  try {
+    const res = await axios.get(`${API_BASE}/api/forms/${id}/`);
     Object.assign(form, res.data);
     questions.value = (res.data.questions || []).map(q => ({
       ...q,
@@ -103,6 +139,7 @@ const fetchForm = async () => {
       any_option_triggers_question: q.any_option_triggers_question || null,
       options: q.options ? q.options.map(o => ({ ...o })) : [],
     }));
+    formId.value = id;
   } catch (e) {
     // handle error
   } finally {
@@ -110,7 +147,11 @@ const fetchForm = async () => {
   }
 };
 
-onMounted(fetchForm);
+const resetForm = () => {
+  form.name = '';
+  form.description = '';
+  questions.value = [];
+};
 
 const addQuestion = () => {
   questions.value.push({
@@ -160,10 +201,10 @@ const saveForm = async () => {
         })),
       })),
     };
-    if (formId === 'new') {
+    if (formId.value === 'new') {
       await axios.post(`${API_BASE}/api/forms/`, payload);
     } else {
-      await axios.put(`${API_BASE}/api/forms/${formId}/`, payload);
+      await axios.put(`${API_BASE}/api/forms/${formId.value}/`, payload);
     }
     saveSuccess.value = true;
     setTimeout(() => (saveSuccess.value = false), 2000);
