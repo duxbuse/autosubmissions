@@ -9,12 +9,11 @@
       <div v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx" class="question-block">
         <label :for="'q_' + question.id">{{ question.text }}</label>
         <component
-          :is="getInputComponent(question)"
+          :is="components[getInputComponent(question)]"
           v-model="answers[question.id]"
-          :question="question"
           :options="question.options"
           :id="'q_' + question.id"
-        />
+        ></component>
       </div>
       <button type="submit">Submit</button>
       <span v-if="submitSuccess" class="success">Submitted!</span>
@@ -23,8 +22,9 @@
   </div>
 </template>
 
+
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 
@@ -38,6 +38,109 @@ const answers = reactive({});
 const submitSuccess = ref(false);
 const submitError = ref(false);
 
+
+// Input components as SFCs for runtime-only Vue (no template option)
+import { h } from 'vue';
+
+const inputText = {
+  props: ['modelValue', 'id'],
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('input', {
+      id: props.id,
+      type: 'text',
+      value: props.modelValue,
+      onInput: e => emit('update:modelValue', e.target.value)
+    });
+  }
+};
+
+const inputParagraph = {
+  props: ['modelValue', 'id'],
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('textarea', {
+      id: props.id,
+      value: props.modelValue,
+      onInput: e => emit('update:modelValue', e.target.value)
+    });
+  }
+};
+
+const inputMc = {
+  props: ['modelValue', 'options', 'id'],
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('div', {},
+      props.options?.map(opt =>
+        h('label', { key: opt.id }, [
+          h('input', {
+            type: 'radio',
+            name: props.id,
+            value: opt.text,
+            checked: props.modelValue === opt.text,
+            onChange: () => emit('update:modelValue', opt.text)
+          }),
+          ' ',
+          opt.text
+        ])
+      )
+    );
+  }
+};
+
+const inputCheck = {
+  props: ['modelValue', 'options', 'id'],
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    const onChange = (e, val) => {
+      let arr = Array.isArray(props.modelValue) ? [...props.modelValue] : [];
+      if (e.target.checked && !arr.includes(val)) arr.push(val);
+      else if (!e.target.checked) arr = arr.filter(v => v !== val);
+      emit('update:modelValue', arr);
+    };
+    return () => h('div', {},
+      props.options?.map(opt =>
+        h('label', { key: opt.id }, [
+          h('input', {
+            type: 'checkbox',
+            value: opt.text,
+            checked: props.modelValue && props.modelValue.includes(opt.text),
+            onChange: e => onChange(e, opt.text)
+          }),
+          ' ',
+          opt.text
+        ])
+      )
+    );
+  }
+};
+
+const inputDrop = {
+  props: ['modelValue', 'options', 'id'],
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('select', {
+      id: props.id,
+      value: props.modelValue,
+      onChange: e => emit('update:modelValue', e.target.value)
+    }, [
+      h('option', { value: '' }, '-- Select --'),
+      ...(props.options?.map(opt =>
+        h('option', { key: opt.id, value: opt.text }, opt.text)
+      ) || [])
+    ]);
+  }
+};
+
+const components = {
+  'input-text': inputText,
+  'input-paragraph': inputParagraph,
+  'input-mc': inputMc,
+  'input-check': inputCheck,
+  'input-drop': inputDrop
+};
+
 const fetchForm = async () => {
   loading.value = true;
   try {
@@ -46,7 +149,7 @@ const fetchForm = async () => {
     questions.value = res.data.questions || [];
     // Initialize answers for visible questions
     for (const q of questions.value) {
-      answers[q.id] = '';
+      answers[q.id] = q.question_type === 'CHECK' ? [] : '';
     }
   } catch (e) {
     form.value = null;
@@ -99,46 +202,7 @@ const submitForm = async () => {
 };
 </script>
 
-<script>
-// Input components for each question type
-export default {
-  components: {
-    'input-text': {
-      props: ['modelValue', 'id'],
-      emits: ['update:modelValue'],
-      template: `<input :id="id" type="text" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)" />`,
-    },
-    'input-paragraph': {
-      props: ['modelValue', 'id'],
-      emits: ['update:modelValue'],
-      template: `<textarea :id="id" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)"></textarea>`,
-    },
-    'input-mc': {
-      props: ['modelValue', 'options', 'id'],
-      emits: ['update:modelValue'],
-      template: `<div><label v-for="opt in options" :key="opt.id"><input type="radio" :name="id" :value="opt.text" :checked="modelValue === opt.text" @change="$emit('update:modelValue', opt.text)" /> {{ opt.text }}</label></div>`,
-    },
-    'input-check': {
-      props: ['modelValue', 'options', 'id'],
-      emits: ['update:modelValue'],
-      template: `<div><label v-for="opt in options" :key="opt.id"><input type="checkbox" :value="opt.text" :checked="modelValue && modelValue.includes(opt.text)" @change="onChange($event, opt.text)" /> {{ opt.text }}</label></div>`,
-      methods: {
-        onChange(e, val) {
-          let arr = Array.isArray(this.modelValue) ? [...this.modelValue] : [];
-          if (e.target.checked) arr.push(val);
-          else arr = arr.filter(v => v !== val);
-          this.$emit('update:modelValue', arr);
-        },
-      },
-    },
-    'input-drop': {
-      props: ['modelValue', 'options', 'id'],
-      emits: ['update:modelValue'],
-      template: `<select :id="id" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)"><option value="">-- Select --</option><option v-for="opt in options" :key="opt.id" :value="opt.text">{{ opt.text }}</option></select>`,
-    },
-  },
-};
-</script>
+
 
 <style scoped>
 .form-submitter {
