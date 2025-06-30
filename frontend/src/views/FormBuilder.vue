@@ -1,4 +1,3 @@
-
 <template>
   <div class="form-builder">
     <h1>Form Builder</h1>
@@ -79,7 +78,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 const route = useRoute();
 const formId = route.params.id;
@@ -93,7 +95,7 @@ const questions = ref([]);
 const fetchForm = async () => {
   loading.value = true;
   try {
-    const res = await axios.get(`/api/forms/${formId}/`);
+    const res = await axios.get(`${API_BASE}/api/forms/${formId}/`);
     Object.assign(form, res.data);
     questions.value = (res.data.questions || []).map(q => ({
       ...q,
@@ -158,7 +160,11 @@ const saveForm = async () => {
         })),
       })),
     };
-    await axios.put(`/api/forms/${formId}/`, payload);
+    if (formId === 'new') {
+      await axios.post(`${API_BASE}/api/forms/`, payload);
+    } else {
+      await axios.put(`${API_BASE}/api/forms/${formId}/`, payload);
+    }
     saveSuccess.value = true;
     setTimeout(() => (saveSuccess.value = false), 2000);
   } catch (e) {
