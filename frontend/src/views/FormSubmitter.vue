@@ -160,9 +160,49 @@ const fetchForm = async () => {
 
 onMounted(fetchForm);
 
-// Show only questions that are not hidden or are triggered (basic: just not hidden for now)
+
+// Show questions that are not hidden, or are triggered by answers to previous questions
 const visibleQuestions = computed(() => {
-  return questions.value.filter(q => !q.hidden);
+  // Map question id to index for fast lookup
+  const idToIdx = {};
+  questions.value.forEach((q, i) => { idToIdx[q.id] = i; });
+
+  // Track which questions are visible
+  const visible = [];
+  for (let i = 0; i < questions.value.length; ++i) {
+    const q = questions.value[i];
+    // Always show if not hidden
+    if (!q.hidden) {
+      visible.push(q);
+      continue;
+    }
+    // If hidden, check if triggered by any previous answer
+    let triggered = false;
+    // Check if any option in any previous question triggers this question
+    for (let j = 0; j < i; ++j) {
+      const prevQ = questions.value[j];
+      if (prevQ.options && prevQ.options.length) {
+        for (const opt of prevQ.options) {
+          if (opt.triggers_question == q.id) {
+            // For MC, DROP: check if answer matches option
+            if ((prevQ.question_type === 'MC' || prevQ.question_type === 'DROP') && answers[prevQ.id] === opt.text) {
+              triggered = true;
+            }
+            // For CHECK: check if answer array includes option
+            if (prevQ.question_type === 'CHECK' && Array.isArray(answers[prevQ.id]) && answers[prevQ.id].includes(opt.text)) {
+              triggered = true;
+            }
+          }
+        }
+      }
+      // For DROP: any_option_triggers_question
+      if (prevQ.question_type === 'DROP' && prevQ.any_option_triggers_question == q.id && answers[prevQ.id]) {
+        triggered = true;
+      }
+    }
+    if (triggered) visible.push(q);
+  }
+  return visible;
 });
 
 const getInputComponent = (question) => {

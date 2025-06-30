@@ -4,7 +4,7 @@
   "description": "etse",
   "questions": [
     {
-      "id": 7,
+      "id": 11,
       "text": "setset",
       "question_type": "TEXT",
       "order": 1,
@@ -14,7 +14,7 @@
       "options": []
     },
     {
-      "id": 8,
+      "id": 12,
       "text": "what is my age",
       "question_type": "TEXT",
       "order": 2,
@@ -24,7 +24,7 @@
       "options": []
     },
     {
-      "id": 9,
+      "id": 13,
       "text": "which one",
       "question_type": "MC",
       "order": 3,
@@ -33,19 +33,19 @@
       "any_option_triggers_question": null,
       "options": [
         {
-          "id": 3,
+          "id": 5,
           "text": "cat",
           "triggers_question": null
         },
         {
-          "id": 4,
+          "id": 6,
           "text": "dog",
           "triggers_question": null
         }
       ]
     },
     {
-      "id": 10,
+      "id": 14,
       "text": "dogs are smelly",
       "question_type": "CHECK",
       "order": 4,
