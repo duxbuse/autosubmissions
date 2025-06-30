@@ -79,7 +79,10 @@ const inputMc = {
             name: props.id,
             value: opt.text,
             checked: props.modelValue === opt.text,
-            onChange: () => emit('update:modelValue', opt.text)
+            onChange: () => {
+              console.log('[SELECT] MC', { id: props.id, selected: opt.text });
+              emit('update:modelValue', opt.text);
+            }
           }),
           ' ',
           opt.text
@@ -97,6 +100,7 @@ const inputCheck = {
       let arr = Array.isArray(props.modelValue) ? [...props.modelValue] : [];
       if (e.target.checked && !arr.includes(val)) arr.push(val);
       else if (!e.target.checked) arr = arr.filter(v => v !== val);
+      console.log('[SELECT] CHECK', { id: props.id, selected: val, checked: e.target.checked, newValue: arr });
       emit('update:modelValue', arr);
     };
     return () => h('div', {},
@@ -123,7 +127,10 @@ const inputDrop = {
     return () => h('select', {
       id: props.id,
       value: props.modelValue,
-      onChange: e => emit('update:modelValue', e.target.value)
+      onChange: e => {
+        console.log('[SELECT] DROP', { id: props.id, selected: e.target.value });
+        emit('update:modelValue', e.target.value);
+      }
     }, [
       h('option', { value: '' }, '-- Select --'),
       ...(props.options?.map(opt =>
@@ -147,7 +154,9 @@ const fetchForm = async () => {
     const res = await axios.get(`${API_BASE}/api/forms/${formId}/`);
     form.value = res.data;
     questions.value = res.data.questions || [];
-    // Initialize answers for visible questions
+    // Clear all previous answers
+    Object.keys(answers).forEach(k => delete answers[k]);
+    // Initialize answers for ALL questions (including hidden)
     for (const q of questions.value) {
       answers[q.id] = q.question_type === 'CHECK' ? [] : '';
     }
@@ -169,6 +178,12 @@ const visibleQuestions = computed(() => {
 
   // Track which questions are visible
   const visible = [];
+  const newlyVisible = [];
+  // Debug: log questions and answers on every re-compute
+  console.log('[DEBUG] visibleQuestions: questions', questions.value);
+  console.log('[DEBUG] visibleQuestions: answers', JSON.parse(JSON.stringify(answers)));
+  const hiddenQs = questions.value.filter(q => q.hidden);
+  console.log('[DEBUG] Currently hidden questions:', hiddenQs.map(q => ({ id: q.id, text: q.text })));
   for (let i = 0; i < questions.value.length; ++i) {
     const q = questions.value[i];
     // Always show if not hidden
@@ -178,29 +193,56 @@ const visibleQuestions = computed(() => {
     }
     // If hidden, check if triggered by any previous answer
     let triggered = false;
-    // Check if any option in any previous question triggers this question
-    for (let j = 0; j < i; ++j) {
+    outer: for (let j = 0; j < i; ++j) {
       const prevQ = questions.value[j];
       if (prevQ.options && prevQ.options.length) {
         for (const opt of prevQ.options) {
+          // Debug: log trigger check for every option, including types
+          console.log('[DEBUG] Checking trigger', {
+            prevQid: prevQ.id,
+            prevQType: prevQ.question_type,
+            optText: opt.text,
+            optTriggers: opt.triggers_question,
+            optTriggersType: typeof opt.triggers_question,
+            qid: q.id,
+            qidType: typeof q.id,
+            answer: answers[prevQ.id]
+          });
           if (opt.triggers_question == q.id) {
             // For MC, DROP: check if answer matches option
             if ((prevQ.question_type === 'MC' || prevQ.question_type === 'DROP') && answers[prevQ.id] === opt.text) {
+              console.log('[TRIGGER] MC/DROP', { prevQid: prevQ.id, answer: answers[prevQ.id], opt: opt.text, triggers: q.id });
               triggered = true;
+              break outer;
             }
-            // For CHECK: check if answer array includes option
-            if (prevQ.question_type === 'CHECK' && Array.isArray(answers[prevQ.id]) && answers[prevQ.id].includes(opt.text)) {
-              triggered = true;
+            // For CHECK: always treat answer as array
+            if (prevQ.question_type === 'CHECK') {
+              const arr = Array.isArray(answers[prevQ.id]) ? answers[prevQ.id] : [];
+              // Debug log
+              console.log('[DEBUG] CHECK trigger compare', { arr, optText: opt.text, includes: arr.includes(opt.text) });
+              if (arr.includes(opt.text)) {
+                console.log('[TRIGGER] CHECK', { prevQid: prevQ.id, answer: arr, opt: opt.text, triggers: q.id });
+                triggered = true;
+                break outer;
+              }
             }
           }
         }
       }
       // For DROP: any_option_triggers_question
       if (prevQ.question_type === 'DROP' && prevQ.any_option_triggers_question == q.id && answers[prevQ.id]) {
+        console.log('[TRIGGER] DROP any_option', { prevQid: prevQ.id, answer: answers[prevQ.id], triggers: q.id });
         triggered = true;
+        break outer;
       }
     }
-    if (triggered) visible.push(q);
+    if (triggered) {
+      visible.push(q);
+      newlyVisible.push(q.id);
+    }
+  }
+  if (newlyVisible.length > 0) {
+    console.log('[VISIBLE] Newly visible hidden questions:', newlyVisible);
   }
   return visible;
 });

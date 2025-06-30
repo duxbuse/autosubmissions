@@ -21,15 +21,21 @@ class FormViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         data = request.data
+        logger = logging.getLogger(__name__)
+        logger.info(f"[FormViewSet.update] Incoming payload: {json.dumps(data, indent=2)}")
         # Save form and questions/options
         try:
             serializer = self.get_serializer(instance, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
         except Exception as e:
-            logger = logging.getLogger(__name__)
             logger.error(f"Serializer error in FormViewSet.update: {e}\nData: {data}\nErrors: {getattr(e, 'detail', str(e))}")
             return Response({'detail': 'Invalid data', 'errors': getattr(e, 'detail', str(e))}, status=400)
         self.perform_update(serializer)
+        # Log serialized data after update
+        logger.info(f"[FormViewSet.update] Serialized response: {json.dumps(serializer.data, indent=2)}")
+        # Compare payload and serialized data for divergence
+        if json.dumps(data, sort_keys=True) != json.dumps(serializer.data, sort_keys=True):
+            logger.warning(f"[FormViewSet.update] Payload and serialized data diverge!\nPayload: {json.dumps(data, indent=2)}\nSerialized: {json.dumps(serializer.data, indent=2)}")
         # Write to JSON file
         forms_dir = Path(settings.BASE_DIR) / 'form_json'
         forms_dir.mkdir(exist_ok=True)

@@ -148,6 +148,32 @@ const fetchAvailableForms = async () => {
   }
 };
 
+// Helper: Map triggers_question from id to index for UI dropdowns
+function mapTriggersQuestionIdToIndex(questionsArr) {
+  const idToIndex = {};
+  questionsArr.forEach((q, idx) => {
+    if (q.id !== undefined && q.id !== null) idToIndex[q.id] = idx;
+  });
+  questionsArr.forEach((q) => {
+    if (q.options) {
+      q.options.forEach((o) => {
+        // Always map triggers_question from id to index if it's not null/undefined
+        if (o.triggers_question !== null && o.triggers_question !== undefined) {
+          // If triggers_question is already an index (from UI), skip remapping
+          if (typeof o.triggers_question === 'number' && o.triggers_question >= 0 && o.triggers_question < questionsArr.length && questionsArr[o.triggers_question].id === o.triggers_question) {
+            return;
+          }
+          // Map id to index, or null if not found
+          const idx = idToIndex[o.triggers_question];
+          o.triggers_question = (typeof idx === 'number') ? idx : null;
+        } else {
+          o.triggers_question = null;
+        }
+      });
+    }
+  });
+}
+
 const loadForm = async (id) => {
   loading.value = true;
   try {
@@ -162,6 +188,8 @@ const loadForm = async (id) => {
         triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
       })) : [],
     }));
+    // Map triggers_question from id to index for UI
+    mapTriggersQuestionIdToIndex(questions.value);
     formId.value = id;
   } catch (e) {
     // handle error
@@ -184,6 +212,7 @@ const addQuestion = () => {
     output_template: '',
     options: [],
     hidden: false,
+    // No id: new question, backend will assign
   });
 };
 const removeQuestion = idx => {
@@ -201,6 +230,7 @@ const moveQuestion = (idx, dir) => {
 
 const addOption = qIdx => {
   questions.value[qIdx].options.push({ text: '', triggers_question: null });
+  // No id: new option, backend will assign
 };
 const removeOption = (qIdx, oIdx) => {
   questions.value[qIdx].options.splice(oIdx, 1);
@@ -259,10 +289,13 @@ const saveForm = async () => {
   saveSuccess.value = false;
   saveError.value = false;
   try {
+    // Only send questions, never questions_read in payload
+    const { questions_read, ...formForPayload } = form;
     const payload = {
-      ...form,
+      ...formForPayload,
       questions: questions.value.map((q, qIdx) => ({
         ...q,
+        // Always include id if present, so backend can match for update
         hidden: !!q.hidden,
         any_option_triggers_question: q.any_option_triggers_question || null,
         options: q.options.map(o => ({
@@ -272,11 +305,35 @@ const saveForm = async () => {
         })),
       })),
     };
+    console.log('Payload sent to backend:', JSON.stringify(payload, null, 2));
+    let res;
     if (formId.value === 'new') {
-      await axios.post(`${API_BASE}/api/forms/`, payload);
+      res = await axios.post(`${API_BASE}/api/forms/`, payload);
+      // After create, update local state from backend response
+      const newId = res.data.id;
+      updateFormFromBackend(res.data);
+      formId.value = newId;
     } else {
-      await axios.put(`${API_BASE}/api/forms/${formId.value}/`, payload);
+      res = await axios.put(`${API_BASE}/api/forms/${formId.value}/`, payload);
+      // After update, update local state from backend response
+      updateFormFromBackend(res.data);
     }
+// Helper: Update local form/questions state from backend response (using questions_read)
+function updateFormFromBackend(data) {
+  Object.assign(form, data);
+  // Prefer questions_read if present, else fallback to questions
+  const backendQuestions = data.questions_read || data.questions || [];
+  questions.value = (backendQuestions).map(q => ({
+    ...q,
+    hidden: q.hidden || false,
+    any_option_triggers_question: q.any_option_triggers_question || null,
+    options: q.options ? q.options.map(o => ({
+      ...o,
+      triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
+    })) : [],
+  }));
+  mapTriggersQuestionIdToIndex(questions.value);
+}
     saveSuccess.value = true;
     setTimeout(() => (saveSuccess.value = false), 2000);
   } catch (e) {
