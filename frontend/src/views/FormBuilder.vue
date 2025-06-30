@@ -1,13 +1,16 @@
 <template>
   <div class="form-builder">
     <h1>Form Builder</h1>
-    <div v-if="!mode">
-      <button @click="selectMode('new')">Create New Form</button>
-      <button @click="selectMode('edit')">Edit Existing Form</button>
-    </div>
-    <div v-else-if="mode === 'edit' && !formId">
-      <h2>Select a form to edit</h2>
+    <!-- Default view: show all forms as tiles, with a big plus sign for new form -->
+    <div v-if="!mode || (mode === 'edit' && !formId)">
+      <h2>Select a form to edit or create a new one</h2>
       <div class="form-tiles">
+        <!-- Big plus sign tile for new form -->
+        <div class="form-tile new-form-tile" @click="selectMode('new')">
+          <div class="plus-sign">+</div>
+          <h3>New</h3>
+        </div>
+        <!-- Existing forms -->
         <div
           v-for="f in availableForms"
           :key="f.id"
@@ -18,7 +21,6 @@
           <p>{{ f.description }}</p>
         </div>
       </div>
-      <button style="margin-top:2rem" @click="mode = null">Back</button>
     </div>
     <div v-else>
       <div class="form-meta">
@@ -98,6 +100,7 @@
       <button @click="addQuestion">Add Question</button>
       <div class="actions">
         <button @click="saveForm" :disabled="saving">Save Form</button>
+        <button @click="cancelEdit" :disabled="saving" style="margin-left: 1rem;">Cancel</button>
         <span v-if="saveSuccess" class="success">Saved!</span>
         <span v-if="saveError" class="error">Error saving form.</span>
       </div>
@@ -111,7 +114,7 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-const mode = ref(null); // 'new' or 'edit'
+const mode = ref('edit'); // Default to 'edit' mode
 const formId = ref(null);
 const selectedFormId = ref("");
 const availableForms = ref([]);
@@ -130,6 +133,7 @@ const selectMode = (m) => {
   mode.value = m;
   if (m === 'edit') {
     fetchAvailableForms();
+    formId.value = null;
   } else if (m === 'new') {
     formId.value = 'new';
     resetForm();
@@ -147,6 +151,13 @@ const fetchAvailableForms = async () => {
     loading.value = false;
   }
 };
+
+// Fetch forms on mount (for default view)
+onMounted(() => {
+  if (mode.value === 'edit') {
+    fetchAvailableForms();
+  }
+});
 
 // Helper: Map triggers_question from id to index for UI dropdowns
 function mapTriggersQuestionIdToIndex(questionsArr) {
@@ -353,6 +364,13 @@ watch(questions, (newVal) => {
     }
   });
 }, { deep: true });
+
+// Cancel editing: return to tile view (edit mode, no form selected)
+function cancelEdit() {
+  mode.value = 'edit';
+  formId.value = null;
+  fetchAvailableForms();
+}
 </script>
 
 <style scoped>
@@ -426,6 +444,27 @@ watch(questions, (newVal) => {
   .form-tile p {
     color: #666;
     margin: 0;
+  }
+  .new-form-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #e6eaff;
+    border: 2px dashed #b3b3ff;
+    color: #3a3a6a;
+    font-weight: bold;
+    min-height: 180px;
+    min-width: 220px;
+    max-width: 320px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .new-form-tile .plus-sign {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    color: #6a6aff;
   }
 </style>
 
