@@ -26,6 +26,7 @@
           <span>Form Name:</span>
           <input v-model="form.name" placeholder="Form name" />
         </label>
+        <span v-if="validationErrors.form.name" class="error">{{ validationErrors.form.name }}</span>
         <label>
           <span>Description:</span>
           <textarea v-model="form.description" placeholder="Form description"></textarea>
@@ -46,6 +47,7 @@
             <input type="checkbox" v-model="question.hidden" /> Hidden by default
           </label>
         </div>
+        <span v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].text" class="error">{{ validationErrors.questions[qIdx].text }}</span>
         <select v-model="question.question_type">
           <option value="TEXT">Text</option>
           <option value="PARAGRAPH">Paragraph</option>
@@ -60,6 +62,7 @@
 
         <div v-if="['MC','CHECK','DROP'].includes(question.question_type)">
           <h4>Options</h4>
+          <div v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].options" class="error">{{ validationErrors.questions[qIdx].options }}</div>
           <div v-if="question.question_type === 'DROP'" class="option-block">
             <label>
               Triggers question for any selection:
@@ -79,6 +82,7 @@
               </select>
             </label>
             <button @click="removeOption(qIdx, oIdx)">Delete Option</button>
+            <span v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].optionsDetail && validationErrors.questions[qIdx].optionsDetail[oIdx]" class="error">{{ validationErrors.questions[qIdx].optionsDetail[oIdx] }}</span>
           </div>
           <button @click="addOption(qIdx)">Add Option</button>
         </div>
@@ -109,6 +113,10 @@ const saveSuccess = ref(false);
 const saveError = ref(false);
 const form = reactive({ name: '', description: '' });
 const questions = ref([]);
+const validationErrors = reactive({
+  form: {},
+  questions: []
+});
 
 const selectMode = (m) => {
   mode.value = m;
@@ -187,7 +195,46 @@ const removeOption = (qIdx, oIdx) => {
   questions.value[qIdx].options.splice(oIdx, 1);
 };
 
+function validateForm() {
+  let valid = true;
+  validationErrors.form = {};
+  validationErrors.questions = [];
+  // Form name required
+  if (!form.name || !form.name.trim()) {
+    validationErrors.form.name = 'Form name is required.';
+    valid = false;
+  }
+  // Validate questions
+  questions.value.forEach((q, qIdx) => {
+    const qErr = {};
+    if (!q.text || !q.text.trim()) {
+      qErr.text = 'Question text is required.';
+      valid = false;
+    }
+    if (["MC", "CHECK", "DROP"].includes(q.question_type)) {
+      if (!q.options || q.options.length === 0) {
+        qErr.options = 'At least one option is required.';
+        valid = false;
+      } else {
+        q.options.forEach((o, oIdx) => {
+          if (!o.text || !o.text.trim()) {
+            if (!qErr.optionsDetail) qErr.optionsDetail = {};
+            qErr.optionsDetail[oIdx] = 'Option text is required.';
+            valid = false;
+          }
+        });
+      }
+    }
+    validationErrors.questions[qIdx] = qErr;
+  });
+  return valid;
+}
+
 const saveForm = async () => {
+  if (!validateForm()) {
+    saveError.value = true;
+    return;
+  }
   saving.value = true;
   saveSuccess.value = false;
   saveError.value = false;
