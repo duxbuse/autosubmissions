@@ -7,6 +7,7 @@ from .serializers import FormSerializer, SubmissionSerializer
 import json
 from django.conf import settings
 from pathlib import Path
+import logging
 
 class FormViewSet(viewsets.ModelViewSet):
     queryset = Form.objects.all()
@@ -21,8 +22,13 @@ class FormViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         data = request.data
         # Save form and questions/options
-        serializer = self.get_serializer(instance, data=data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer = self.get_serializer(instance, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Serializer error in FormViewSet.update: {e}\nData: {data}\nErrors: {getattr(e, 'detail', str(e))}")
+            return Response({'detail': 'Invalid data', 'errors': getattr(e, 'detail', str(e))}, status=400)
         self.perform_update(serializer)
         # Write to JSON file
         forms_dir = Path(settings.BASE_DIR) / 'form_json'
@@ -40,6 +46,3 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     def generate_doc(self, request, pk=None):
         # Placeholder for document generation logic
         return Response({'status': 'Document generation not implemented yet.'})
-from django.shortcuts import render
-
-# Create your views here.

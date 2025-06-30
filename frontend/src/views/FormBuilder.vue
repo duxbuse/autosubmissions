@@ -66,9 +66,9 @@
           <div v-if="question.question_type === 'DROP'" class="option-block">
             <label>
               Triggers question for any selection:
-              <select v-model="question.any_option_triggers_question">
+              <select v-model.number="question.any_option_triggers_question">
                 <option :value="null">None</option>
-                <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
+                <option v-for="q in questions" :key="q.id || q.order" :value="Number(q.id)">{{ q.text }}</option>
               </select>
             </label>
           </div>
@@ -76,9 +76,17 @@
             <input v-model="option.text" placeholder="Option text" />
             <label>
               Triggers question:
-              <select v-model="option.triggers_question">
+              <select v-model.number="option.triggers_question">
                 <option :value="null">None</option>
-                <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
+                <template v-for="(q, qIdx2) in questions">
+                  <option
+                    v-if="qIdx2 !== qIdx"
+                    :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
+                    :value="qIdx2"
+                  >
+                    {{ q.text }}
+                  </option>
+                </template>
               </select>
             </label>
             <button @click="removeOption(qIdx, oIdx)">Delete Option</button>
@@ -98,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -149,7 +157,10 @@ const loadForm = async (id) => {
       ...q,
       hidden: q.hidden || false,
       any_option_triggers_question: q.any_option_triggers_question || null,
-      options: q.options ? q.options.map(o => ({ ...o })) : [],
+      options: q.options ? q.options.map(o => ({
+        ...o,
+        triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
+      })) : [],
     }));
     formId.value = id;
   } catch (e) {
@@ -230,6 +241,15 @@ function validateForm() {
   return valid;
 }
 
+
+// Helper to resolve triggers_question index to id for payload
+function resolveTriggersQuestion(option, questionsArr) {
+  if (option.triggers_question == null) return null;
+  const idx = option.triggers_question;
+  const q = questionsArr[idx];
+  return q && q.id !== undefined ? q.id : null;
+}
+
 const saveForm = async () => {
   if (!validateForm()) {
     saveError.value = true;
@@ -241,13 +261,13 @@ const saveForm = async () => {
   try {
     const payload = {
       ...form,
-      questions: questions.value.map(q => ({
+      questions: questions.value.map((q, qIdx) => ({
         ...q,
         hidden: !!q.hidden,
         any_option_triggers_question: q.any_option_triggers_question || null,
         options: q.options.map(o => ({
           text: o.text,
-          triggers_question: o.triggers_question || null,
+          triggers_question: resolveTriggersQuestion(o, questions.value),
           id: o.id,
         })),
       })),
@@ -265,6 +285,17 @@ const saveForm = async () => {
     saving.value = false;
   }
 };
+
+// Debug: Watch for changes to triggers_question
+watch(questions, (newVal) => {
+  newVal.forEach((q, qIdx) => {
+    if (q.options) {
+      q.options.forEach((o, oIdx) => {
+        console.log(`Question ${qIdx} (${q.text}, id=${q.id}) Option ${oIdx} (${o.text}, id=${o.id}) triggers_question:`, o.triggers_question, typeof o.triggers_question);
+      });
+    }
+  });
+}, { deep: true });
 </script>
 
 <style scoped>
