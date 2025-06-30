@@ -108,8 +108,10 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
+import '../main.css';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -373,98 +375,5 @@ function cancelEdit() {
 }
 </script>
 
-<style scoped>
-.form-builder {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-.form-meta label {
-  display: block;
-  margin-bottom: 1rem;
-}
-.question-block {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 6px;
-  background: #fafbfc;
-}
-.question-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-.option-block {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-.actions {
-  margin-top: 2rem;
-}
-.success {
-  color: green;
-  margin-left: 1rem;
-}
-.error {
-  color: red;
-  margin-left: 1rem;
-}
-  /* Tile styles for edit mode, matching HomePage */
-  .form-tiles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    margin-top: 2rem;
-  }
-  .form-tile {
-    background: #f5f7fa;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    padding: 2rem 2.5rem;
-    min-width: 220px;
-    max-width: 320px;
-    cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s;
-    border: 1px solid #e0e0e0;
-  }
-  .form-tile:hover {
-    box-shadow: 0 6px 18px rgba(0,0,0,0.13);
-    transform: translateY(-4px) scale(1.03);
-    border-color: #b3b3ff;
-  }
-  .form-tile h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.15rem;
-    color: #3a3a6a;
-  }
-  .form-tile p {
-    color: #666;
-    margin: 0;
-  }
-  .new-form-tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #e6eaff;
-    border: 2px dashed #b3b3ff;
-    color: #3a3a6a;
-    font-weight: bold;
-    min-height: 180px;
-    min-width: 220px;
-    max-width: 320px;
-    cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s;
-  }
-  .new-form-tile .plus-sign {
-    font-size: 4rem;
-    line-height: 1;
-    margin-bottom: 0.5rem;
-    color: #6a6aff;
-  }
-</style>
+/* Styles moved to main.css for global consistency */
 

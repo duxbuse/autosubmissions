@@ -23,8 +23,10 @@
 </template>
 
 
+
 <script setup>
 import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
+import '../main.css';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 
@@ -286,26 +288,5 @@ const submitForm = async () => {
 
 
 
-<style scoped>
-.form-submitter {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-.question-block {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border-radius: 6px;
-  background: #fafbfc;
-}
-.success {
-  color: green;
-  margin-left: 1rem;
-}
-.error {
-  color: red;
-  margin-left: 1rem;
-}
-</style>
+/* Styles moved to main.css for global consistency */
 
