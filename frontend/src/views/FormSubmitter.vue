@@ -138,9 +138,15 @@ const onSearchClient = async () => {
     return;
   }
   try {
-    // Fetch all submissions for this form and client name
-    const res = await axios.get(`${API_BASE}/api/submissions/?form=${formId}&client_name=${encodeURIComponent(name)}`);
-    searchResults.value = Array.isArray(res.data) ? res.data : (res.data.results || []);
+    // Fetch all submissions for this form (backend may not filter client_name strictly)
+    const res = await axios.get(`${API_BASE}/api/submissions/?form=${formId}`);
+    let results = Array.isArray(res.data) ? res.data : (res.data.results || []);
+    // Filter strictly by client name (case-insensitive substring match)
+    const searchLower = name.toLowerCase();
+    results = results.filter(sub =>
+      typeof sub.client_name === 'string' && sub.client_name.toLowerCase().includes(searchLower)
+    );
+    searchResults.value = results;
     searchPerformed.value = true;
   } catch (e) {
     searchResults.value = [];
