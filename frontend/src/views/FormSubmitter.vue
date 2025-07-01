@@ -2,7 +2,7 @@
   <div class="form-submitter">
     <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 2rem;">
       <div style="flex: 1 1 0; min-width: 0;">
-        <h1>Submit: {{ form?.name || '...' }}</h1>
+        <h1>Generate: {{ form?.name || '...' }}</h1>
         <div v-if="loading">Loading form...</div>
         <div v-else-if="!form">
           <p>Form not found.</p>
