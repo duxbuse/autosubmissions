@@ -374,6 +374,3 @@ function cancelEdit() {
   fetchAvailableForms();
 }
 </script>
-
-/* Styles moved to main.css for global consistency */
-
