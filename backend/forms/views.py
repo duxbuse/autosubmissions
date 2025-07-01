@@ -8,6 +8,9 @@ import json
 from django.conf import settings
 from pathlib import Path
 import logging
+from django.http import HttpResponse
+from docx import Document
+import re
 
 class FormViewSet(viewsets.ModelViewSet):
     queryset = Form.objects.all()
@@ -50,5 +53,51 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def generate_doc(self, request, pk=None):
-        # Placeholder for document generation logic
-        return Response({'status': 'Document generation not implemented yet.'})
+        submission = get_object_or_404(Submission, pk=pk)
+        answers = {a.question.pk: a.value for a in submission.answers.all()}
+        questions = Question.objects.filter(form=submission.form).order_by('order')
+        doc = Document()
+        for q in questions:
+            template = q.output_template or ''
+            answer = answers.get(q.pk, '')
+            # Only add template if answer is not blank/null
+            if answer is not None and str(answer).strip() != '':
+                text = template.replace('{{answer}}', str(answer))
+                if text.strip():
+                    doc.add_paragraph(text)
+        from io import BytesIO
+        f = BytesIO()
+        doc.save(f)
+        f.seek(0)
+        response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = f'attachment; filename="submission_{submission.pk}.docx"'
+        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        return response
+
+    def create(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.info(f"[SubmissionViewSet.create] Incoming data: {json.dumps(request.data, indent=2)}")
+        # Write the incoming submission data to a local JSON file for debugging
+        try:
+            from django.conf import settings
+            from pathlib import Path
+            submissions_dir = Path(settings.BASE_DIR) / 'submission_json'
+            submissions_dir.mkdir(exist_ok=True)
+            import datetime
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_path = submissions_dir / f'submission_{timestamp}.json'
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(request.data, f, ensure_ascii=False, indent=2)
+            logger.info(f"[SubmissionViewSet.create] Wrote submission to {file_path}")
+        except Exception as file_exc:
+            logger.error(f"[SubmissionViewSet.create] Failed to write submission JSON: {file_exc}")
+        try:
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"[SubmissionViewSet.create] Response: {response.status_code} {getattr(response, 'data', None)}")
+            return response
+        except Exception as e:
+            logger.error(f"[SubmissionViewSet.create] Exception: {str(e)}", exc_info=True)
+            from rest_framework.views import exception_handler
+            resp = exception_handler(e, context={'view': self, 'request': request})
+            logger.error(f"[SubmissionViewSet.create] DRF exception handler response: {getattr(resp, 'data', None)}")
+            return resp or Response({'detail': str(e)}, status=400)

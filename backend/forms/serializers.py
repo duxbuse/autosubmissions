@@ -180,6 +180,7 @@ class FormSerializer(serializers.ModelSerializer):
         return instance
 
 class AnswerSerializer(serializers.ModelSerializer):
+    value = serializers.CharField(allow_blank=True)
     class Meta:
         model = Answer
         fields = ['id', 'question', 'value']
@@ -189,3 +190,21 @@ class SubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
         fields = ['id', 'form', 'submitted_at', 'answers']
+
+    def create(self, validated_data):
+        answers_data = validated_data.pop('answers', [])
+        # Convert string IDs to integers for 'form' and 'question' fields
+        if 'form' in validated_data and isinstance(validated_data['form'], str):
+            validated_data['form'] = int(validated_data['form'])
+        submission = Submission.objects.create(**validated_data)
+        for answer_data in answers_data:
+            if 'question' in answer_data and isinstance(answer_data['question'], str):
+                answer_data['question'] = int(answer_data['question'])
+            Answer.objects.create(submission=submission, **answer_data)
+        return submission
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        # Always include answers in the output, even if not present in the initial payload
+        rep['answers'] = AnswerSerializer(instance.answers.all(), many=True).data
+        return rep

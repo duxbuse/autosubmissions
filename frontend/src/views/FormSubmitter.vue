@@ -34,6 +34,7 @@
         </div>
       </template>
       <button type="submit">Submit</button>
+      <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
       <span v-if="submitSuccess" class="success">Submitted!</span>
       <span v-if="submitError" class="error">Error submitting form.</span>
     </form>
@@ -55,8 +56,10 @@ const loading = ref(true);
 const form = ref(null);
 const questions = ref([]);
 const answers = reactive({});
+
 const submitSuccess = ref(false);
 const submitError = ref(false);
+const submissionId = ref(null);
 
 
 // Input components as SFCs for runtime-only Vue (no template option)
@@ -287,6 +290,7 @@ const getInputComponent = (question) => {
 const submitForm = async () => {
   submitSuccess.value = false;
   submitError.value = false;
+  submissionId.value = null;
   try {
     const payload = {
       form: formId,
@@ -295,11 +299,41 @@ const submitForm = async () => {
         value: Array.isArray(value) ? JSON.stringify(value) : value,
       })),
     };
-    await axios.post(`${API_BASE}/api/submissions/`, payload);
+    const res = await axios.post(`${API_BASE}/api/submissions/`, payload);
+    // Expect backend to return the new submission's id
+    submissionId.value = res.data.id || null;
     submitSuccess.value = true;
     setTimeout(() => (submitSuccess.value = false), 2000);
   } catch (e) {
     submitError.value = true;
+  }
+};
+
+const downloadDoc = async () => {
+  if (!submissionId.value) return;
+  try {
+    const url = `${API_BASE}/api/submissions/${submissionId.value}/generate_doc/`;
+    const res = await axios.get(url, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    // Try to get filename from Content-Disposition header
+    let filename = `submission_${submissionId.value}.docx`;
+    const cd = res.headers['content-disposition'];
+    if (cd) {
+      const match = cd.match(/filename="?([^";]+)"?/);
+      if (match) filename = match[1];
+    }
+    // Create a link and trigger download
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href);
+      document.body.removeChild(link);
+    }, 100);
+  } catch (e) {
+    alert('Failed to download Word document.');
   }
 };
 
