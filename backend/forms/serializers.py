@@ -186,6 +186,22 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'value']
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    def update(self, instance, validated_data):
+        answers_data = validated_data.pop('answers', [])
+        # Update main fields
+        instance.client_name = validated_data.get('client_name', instance.client_name)
+        instance.submission_date = validated_data.get('submission_date', instance.submission_date)
+        if 'form' in validated_data:
+            instance.form_id = int(validated_data['form']) if isinstance(validated_data['form'], str) else validated_data['form']
+        instance.save()
+
+        # Remove all old answers and recreate
+        instance.answers.all().delete()
+        for answer_data in answers_data:
+            if 'question' in answer_data and isinstance(answer_data['question'], str):
+                answer_data['question'] = int(answer_data['question'])
+            Answer.objects.create(submission=instance, **answer_data)
+        return instance
     answers = AnswerSerializer(many=True)
     client_name = serializers.CharField()
     submission_date = serializers.DateField()

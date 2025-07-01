@@ -449,8 +449,29 @@ const submitForm = async () => {
         value: Array.isArray(value) ? JSON.stringify(value) : value,
       })),
     };
-    const res = await axios.post(`${API_BASE}/api/submissions/`, payload);
-    // Expect backend to return the new submission's id
+
+    // 1. Check for existing submission with same form, client_name, and submission_date
+    let existing = null;
+    try {
+      const checkRes = await axios.get(`${API_BASE}/api/submissions/?form=${formId}`);
+      let allSubs = Array.isArray(checkRes.data) ? checkRes.data : (checkRes.data.results || []);
+      existing = allSubs.find(sub =>
+        sub.client_name && sub.client_name.trim().toLowerCase() === clientName.value.trim().toLowerCase() &&
+        sub.submission_date === submissionDate.value
+      );
+    } catch (e) {
+      // If check fails, fallback to create
+      existing = null;
+    }
+
+    let res;
+    if (existing) {
+      // Update existing submission
+      res = await axios.put(`${API_BASE}/api/submissions/${existing.id}/`, payload);
+    } else {
+      // Create new submission
+      res = await axios.post(`${API_BASE}/api/submissions/`, payload);
+    }
     submissionId.value = res.data.id || null;
     submitSuccess.value = true;
     setTimeout(() => (submitSuccess.value = false), 2000);

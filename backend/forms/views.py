@@ -149,3 +149,29 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             resp = exception_handler(e, context={'view': self, 'request': request})
             logger.error(f"[SubmissionViewSet.create] DRF exception handler response: {getattr(resp, 'data', None)}")
             return resp or Response({'detail': str(e)}, status=400)
+
+    def update(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.info(f"[SubmissionViewSet.update] Incoming data: {json.dumps(request.data, indent=2)}")
+        # Write the incoming update data to a local JSON file for debugging
+        try:
+            submissions_dir = Path(settings.BASE_DIR) / 'submission_json'
+            submissions_dir.mkdir(exist_ok=True)
+            import datetime
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_path = submissions_dir / f'update_submission_{kwargs.get('pk', 'unknown')}_{timestamp}.json'
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(request.data, f, ensure_ascii=False, indent=2)
+            logger.info(f"[SubmissionViewSet.update] Wrote update to {file_path}")
+        except Exception as file_exc:
+            logger.error(f"[SubmissionViewSet.update] Failed to write update JSON: {file_exc}")
+        try:
+            response = super().update(request, *args, **kwargs)
+            logger.info(f"[SubmissionViewSet.update] Response: {response.status_code} {getattr(response, 'data', None)}")
+            return response
+        except Exception as e:
+            logger.error(f"[SubmissionViewSet.update] Exception: {str(e)}", exc_info=True)
+            from rest_framework.views import exception_handler
+            resp = exception_handler(e, context={'view': self, 'request': request})
+            logger.error(f"[SubmissionViewSet.update] DRF exception handler response: {getattr(resp, 'data', None)}")
+            return resp or Response({'detail': str(e)}, status=400)
