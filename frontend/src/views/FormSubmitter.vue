@@ -1,55 +1,135 @@
 <template>
   <div class="form-submitter">
-    <h1>Submit: {{ form?.name || '...' }}</h1>
-    <div v-if="loading">Loading form...</div>
-    <div v-else-if="!form">
-      <p>Form not found.</p>
-    </div>
-    <form v-else @submit.prevent="submitForm">
-      <div class="submission-meta" style="margin-bottom: 1.5rem;">
-        <label for="client_name"><b>Client Name:</b></label>
-        <input id="client_name" v-model="clientName" placeholder="Enter client name" required style="margin-bottom: 1rem; width: 100%; max-width: 400px;" />
-        <label for="submission_date"><b>Date:</b></label>
-        <input id="submission_date" type="date" v-model="submissionDate" required style="margin-bottom: 1rem; width: 100%; max-width: 220px;" />
-      </div>
-      <template v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx">
-        <div
-          class="question-block"
-          :style="question.hidden && isTriggered(qIdx) ? 'background: transparent; box-shadow: none; border: none; padding: 0; margin-bottom: 0;' : ''"
-        >
-          <!-- If this question is hidden by default and triggered, render as visually connected inside the block -->
-          <div v-if="question.hidden && isTriggered(qIdx)" class="triggered-question">
-            <label :for="'q_' + question.id">{{ question.text }}</label>
-            <component
-              :is="components[getInputComponent(question)]"
-              v-model="answers[question.id]"
-              :options="question.options"
-              :id="'q_' + question.id"
-            ></component>
-          </div>
-          <!-- Otherwise, render as normal question content -->
-          <template v-else>
-            <label :for="'q_' + question.id">{{ question.text }}</label>
-            <component
-              :is="components[getInputComponent(question)]"
-              v-model="answers[question.id]"
-              :options="question.options"
-              :id="'q_' + question.id"
-            ></component>
-          </template>
+    <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 2rem;">
+      <div style="flex: 1 1 0; min-width: 0;">
+        <h1>Submit: {{ form?.name || '...' }}</h1>
+        <div v-if="loading">Loading form...</div>
+        <div v-else-if="!form">
+          <p>Form not found.</p>
         </div>
-      </template>
-      <button type="submit">Submit</button>
-      <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
-      <span v-if="submitSuccess" class="success">Submitted!</span>
-      <span v-if="submitError" class="error">Error submitting form.</span>
-    </form>
+        <form v-else @submit.prevent="submitForm">
+          <div class="submission-meta" style="margin-bottom: 1.5rem;">
+            <label for="client_name"><b>Client Name:</b></label>
+            <input id="client_name" v-model="clientName" placeholder="Enter client name" required style="margin-bottom: 1rem; width: 100%; max-width: 400px;" />
+            <label for="submission_date"><b>Date:</b></label>
+            <input id="submission_date" type="date" v-model="submissionDate" required style="margin-bottom: 1rem; width: 100%; max-width: 220px;" />
+          </div>
+          <template v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx">
+            <div
+              class="question-block"
+              :style="question.hidden && isTriggered(qIdx) ? 'background: transparent; box-shadow: none; border: none; padding: 0; margin-bottom: 0;' : ''"
+            >
+              <!-- If this question is hidden by default and triggered, render as visually connected inside the block -->
+              <div v-if="question.hidden && isTriggered(qIdx)" class="triggered-question">
+                <label :for="'q_' + question.id">{{ question.text }}</label>
+                <component
+                  :is="components[getInputComponent(question)]"
+                  v-model="answers[question.id]"
+                  :options="question.options"
+                  :id="'q_' + question.id"
+                ></component>
+              </div>
+              <!-- Otherwise, render as normal question content -->
+              <template v-else>
+                <label :for="'q_' + question.id">{{ question.text }}</label>
+                <component
+                  :is="components[getInputComponent(question)]"
+                  v-model="answers[question.id]"
+                  :options="question.options"
+                  :id="'q_' + question.id"
+                ></component>
+              </template>
+            </div>
+          </template>
+          <button type="submit">Submit</button>
+          <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
+          <span v-if="submitSuccess" class="success">Submitted!</span>
+          <span v-if="submitError" class="error">Error submitting form.</span>
+      </form>
+    </div>
+    <div v-if="form" style="width: 320px; min-width: 220px; max-width: 400px;">
+      <input
+        v-model="searchClient"
+        @input="onSearchClient"
+        placeholder="Search submissions by client name..."
+        style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc;"
+      />
+      <div v-if="searchResults.length > 0" class="search-results-tiles" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div
+          v-for="sub in searchResults"
+          :key="sub.id"
+          class="tile"
+          :class="{ selected: sub.id === selectedSubmissionId }"
+          style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 1rem; min-width: 180px; cursor: pointer; border: 2px solid #eee; transition: border 0.2s;"
+          @click="loadSubmission(sub)"
+        >
+          <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em;">{{ sub.client_name }}</div>
+          <div style="font-size: 0.95em; color: #666;">Date: {{ sub.submission_date }}</div>
+          <div style="font-size: 0.9em; color: #888; margin-top: 0.5em;">Submission #{{ sub.id }}</div>
+        </div>
+      </div>
+      <div v-else-if="searchClient && searchPerformed" style="margin-top: 1rem; color: #888; font-size: 0.95em;">No submissions found.</div>
+    </div>
+    </div>
   </div>
 </template>
 
 
 
 <script setup>
+// --- Submission search state ---
+const searchClient = ref("");
+const searchResults = ref([]);
+const searchPerformed = ref(false);
+const selectedSubmissionId = ref(null);
+
+// Search submissions by client name
+const onSearchClient = async () => {
+  const name = searchClient.value.trim();
+  if (!name) {
+    searchResults.value = [];
+    searchPerformed.value = false;
+    return;
+  }
+  try {
+    // Fetch all submissions for this form and client name
+    const res = await axios.get(`${API_BASE}/api/submissions/?form=${formId}&client_name=${encodeURIComponent(name)}`);
+    searchResults.value = Array.isArray(res.data) ? res.data : (res.data.results || []);
+    searchPerformed.value = true;
+  } catch (e) {
+    searchResults.value = [];
+    searchPerformed.value = true;
+  }
+};
+
+// Load a submission into the form for review
+const loadSubmission = (sub) => {
+  if (!sub) return;
+  selectedSubmissionId.value = sub.id;
+  // Set client name and date
+  clientName.value = sub.client_name;
+  submissionDate.value = sub.submission_date;
+  // Set answers
+  if (Array.isArray(sub.answers)) {
+    for (const q of questions.value) {
+      const found = sub.answers.find(a => String(a.question) === String(q.id));
+      if (found) {
+        // If value is a JSON array (for CHECK), parse it
+        if (q.question_type === 'CHECK' && typeof found.value === 'string' && found.value.startsWith('[')) {
+          try { answers[q.id] = JSON.parse(found.value); } catch { answers[q.id] = []; }
+        } else {
+          answers[q.id] = found.value;
+        }
+      } else {
+        answers[q.id] = q.question_type === 'CHECK' ? [] : '';
+      }
+    }
+  }
+  // Set submissionId so download works for this submission
+  submissionId.value = sub.id;
+  submitSuccess.value = false;
+  submitError.value = false;
+};
 import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
 import '../main.css';
 import { useRoute } from 'vue-router';
