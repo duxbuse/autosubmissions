@@ -31,3 +31,4 @@ __pycache__/
 # Data files
 backend/form_json/
 backend/db.sqlite3
+backend/submission_json/
