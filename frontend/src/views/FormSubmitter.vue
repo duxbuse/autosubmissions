@@ -41,7 +41,7 @@
               </template>
             </div>
           </template>
-          <button type="submit">Submit</button>
+          <button type="submit" :disabled="!canSubmit">Submit</button>
           <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
           <button type="button" @click="deleteSubmission" :disabled="!submissionId" style="margin-left: 0.5rem; color: #fff; background: #d9534f; border: none; border-radius: 4px; padding: 0.5em 1em;">Delete Submission</button>
           <span v-if="submitSuccess" class="success">Submitted!</span>
@@ -425,10 +425,20 @@ const getInputComponent = (question) => {
   }
 };
 
+const canSubmit = computed(() => {
+  return clientName.value.trim() !== '' && submissionDate.value.trim() !== '';
+});
+
 const submitForm = async () => {
   submitSuccess.value = false;
   submitError.value = false;
   submissionId.value = null;
+  // Validate required fields
+  if (!canSubmit.value) {
+    submitError.value = true;
+    alert('Please enter both client name and date.');
+    return;
+  }
   try {
     const payload = {
       form: formId,
