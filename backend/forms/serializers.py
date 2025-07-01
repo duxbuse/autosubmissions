@@ -187,15 +187,21 @@ class AnswerSerializer(serializers.ModelSerializer):
 
 class SubmissionSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True)
+    client_name = serializers.CharField()
+    submission_date = serializers.DateField()
     class Meta:
         model = Submission
-        fields = ['id', 'form', 'submitted_at', 'answers']
+        fields = ['id', 'form', 'client_name', 'submission_date', 'submitted_at', 'answers']
 
     def create(self, validated_data):
         answers_data = validated_data.pop('answers', [])
         # Convert string IDs to integers for 'form' and 'question' fields
         if 'form' in validated_data and isinstance(validated_data['form'], str):
             validated_data['form'] = int(validated_data['form'])
+        # Parse date if sent as string
+        if 'submission_date' in validated_data and isinstance(validated_data['submission_date'], str):
+            from datetime import datetime
+            validated_data['submission_date'] = datetime.strptime(validated_data['submission_date'], "%Y-%m-%d").date()
         submission = Submission.objects.create(**validated_data)
         for answer_data in answers_data:
             if 'question' in answer_data and isinstance(answer_data['question'], str):

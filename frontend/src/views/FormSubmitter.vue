@@ -6,6 +6,12 @@
       <p>Form not found.</p>
     </div>
     <form v-else @submit.prevent="submitForm">
+      <div class="submission-meta" style="margin-bottom: 1.5rem;">
+        <label for="client_name"><b>Client Name:</b></label>
+        <input id="client_name" v-model="clientName" placeholder="Enter client name" required style="margin-bottom: 1rem; width: 100%; max-width: 400px;" />
+        <label for="submission_date"><b>Date:</b></label>
+        <input id="submission_date" type="date" v-model="submissionDate" required style="margin-bottom: 1rem; width: 100%; max-width: 220px;" />
+      </div>
       <template v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx">
         <div
           class="question-block"
@@ -60,6 +66,11 @@ const answers = reactive({});
 const submitSuccess = ref(false);
 const submitError = ref(false);
 const submissionId = ref(null);
+const clientName = ref("");
+const submissionDate = ref((() => {
+  const today = new Date();
+  return today.toISOString().slice(0, 10);
+})());
 
 
 // Input components as SFCs for runtime-only Vue (no template option)
@@ -294,6 +305,8 @@ const submitForm = async () => {
   try {
     const payload = {
       form: formId,
+      client_name: clientName.value,
+      submission_date: submissionDate.value,
       answers: Object.entries(answers).map(([question, value]) => ({
         question,
         value: Array.isArray(value) ? JSON.stringify(value) : value,

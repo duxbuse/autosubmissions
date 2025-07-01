@@ -70,6 +70,8 @@ class Submission(models.Model):
     A single, completed form submission by a user.
     """
     form = models.ForeignKey(Form, on_delete=models.PROTECT)
+    client_name = models.CharField(max_length=255)
+    submission_date = models.DateField()
     submitted_at = models.DateTimeField(auto_now_add=True)
 
 class Answer(models.Model):
