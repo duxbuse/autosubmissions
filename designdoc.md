@@ -10,10 +10,12 @@ The primary goal is to streamline the process of data collection and document cr
 
 *   **Home Page**: A landing page that lists all available form types for submission.
 *   **Dynamic Form Builder**: An interface, similar to Google Forms, for creating and editing form types.
-    *   Supports various question types (text, multiple choice, etc.).
-    *   Allows for conditional logic where answering a question can reveal subsequent questions.
-    *   For each question or section, the builder can define a corresponding "sample submission" text snippet. This snippet acts as a template for the final document.
+    *   Supports question types: Text, Multiple Choice, Checkboxes, and Dropdown.
+    *   Allows for conditional logic where answering a question can reveal subsequent questions (triggered/hidden questions are visually connected in the submitter UI).
+    *   For each question, the builder can define a corresponding "sample submission" text snippet. This snippet acts as a template for the final document.
 *   **Form Submission**: A user-friendly interface for filling out a form based on a pre-defined type.
+    *   Triggered (hidden) questions appear as smaller, right-aligned boxes visually connected to the triggering question.
+    *   All form tiles and question blocks use a modern, professional, and visually consistent theme.
 *   **Document Generation**: On submission, the system compiles the answers. It uses the "sample submission" snippets associated with each answered question, populates them with the user's data, and generates a cohesive, formatted `.docx` Word document.
 
 ## 3. System Architecture
@@ -95,7 +97,6 @@ class Question(models.Model):
     """
     class QuestionType(models.TextChoices):
         TEXT = 'TEXT', 'Text'
-        PARAGRAPH = 'PARAGRAPH', 'Paragraph'
         MULTIPLE_CHOICE = 'MC', 'Multiple Choice'
         CHECKBOXES = 'CHECK', 'Checkboxes'
         DROPDOWN = 'DROP', 'Dropdown'
@@ -190,16 +191,20 @@ The frontend will be a Single Page Application (SPA) that communicates with the 
     *   Manages the state of the form being built (questions, options, conditional logic).
     *   Fetches initial form data from `/api/forms/<id>/`.
     *   Provides a UI to add, edit, reorder, and delete questions.
-    *   For each question, it includes input fields for `text`, `question_type`, and the `output_template`.
+    *   For each question, it includes input fields for `text`, `question_type` (Text, Multiple Choice, Checkboxes, Dropdown), and the `output_template`.
     *   For each option, it includes an input to select a `triggers_question` to establish conditional logic.
+    *   All form tiles are perfect squares, centered, and visually consistent.
     *   Saves changes via `PUT` requests to `/api/forms/<id>/`.
 *   **`FormSubmitter` (`/form/submit/<id>`)**:
     *   Fetches the form structure from `/api/forms/<id>/`.
     *   Renders the questions dynamically.
     *   Manages the visibility of conditional questions based on user selections in real-time.
+    *   Triggered (hidden) questions are rendered as smaller, right-aligned boxes within the same question block, visually connected to the triggering question.
+    *   All question blocks and form elements use a modern, professional, and visually consistent theme.
     *   On submit, it packages the answers into a JSON object and `POST`s it to `/api/submissions/`.
     *   After a successful submission, it could redirect the user to a page with a link to download the document (`/api/submissions/<new_id>/generate-doc/`).
 
 ### 5.2. State Management
 
-A state management library (**Pinia for Vue**) is highly recommended for the `FormBuilder` and `FormSubmitter` components. It will simplify handling the complex and interconnected state of questions, answers, and conditional visibility.
+*   State is managed locally within each component (no global state management library is currently used, but Pinia is recommended for future scalability).
+*   All styles are centralized in a global `main.css` file for a consistent, modern look and easy theming.

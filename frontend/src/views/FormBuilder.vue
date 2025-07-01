@@ -52,7 +52,6 @@
         <span v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].text" class="error">{{ validationErrors.questions[qIdx].text }}</span>
         <select v-model="question.question_type">
           <option value="TEXT">Text</option>
-          <option value="PARAGRAPH">Paragraph</option>
           <option value="MC">Multiple Choice</option>
           <option value="CHECK">Checkboxes</option>
           <option value="DROP">Dropdown</option>

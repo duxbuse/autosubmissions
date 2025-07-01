@@ -19,7 +19,6 @@ class Question(models.Model):
     """
     class QuestionType(models.TextChoices):
         TEXT = 'TEXT', 'Text'
-        PARAGRAPH = 'PARAGRAPH', 'Paragraph'
         MULTIPLE_CHOICE = 'MC', 'Multiple Choice'
         CHECKBOXES = 'CHECK', 'Checkboxes'
         DROPDOWN = 'DROP', 'Dropdown'
@@ -80,6 +79,4 @@ class Answer(models.Model):
     submission = models.ForeignKey(Submission, related_name='answers', on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.PROTECT)
     value = models.TextField() # Stores text, or a JSON list of selected option IDs
-from django.db import models
 
-# Create your models here.
