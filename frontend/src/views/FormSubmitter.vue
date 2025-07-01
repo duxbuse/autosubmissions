@@ -43,8 +43,10 @@
           </template>
           <button type="submit">Submit</button>
           <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
+          <button type="button" @click="deleteSubmission" :disabled="!submissionId" style="margin-left: 0.5rem; color: #fff; background: #d9534f; border: none; border-radius: 4px; padding: 0.5em 1em;">Delete Submission</button>
           <span v-if="submitSuccess" class="success">Submitted!</span>
           <span v-if="submitError" class="error">Error submitting form.</span>
+
       </form>
     </div>
     <div v-if="form" style="width: 320px; min-width: 220px; max-width: 400px;">
@@ -481,4 +483,27 @@ function isTriggered(qIdx) {
   const q = visibleQuestions.value[qIdx];
   return q && q.hidden;
 }
+
+
+// Delete the current submission
+const deleteSubmission = async () => {
+  if (!submissionId.value) return;
+  if (!confirm('Are you sure you want to delete this submission? This action cannot be undone.')) return;
+  try {
+    await axios.delete(`${API_BASE}/api/submissions/${submissionId.value}/`);
+    // Clear form state after deletion
+    submissionId.value = null;
+    submitSuccess.value = false;
+    submitError.value = false;
+    // Optionally, reload form or clear answers
+    Object.keys(answers).forEach(k => answers[k] = Array.isArray(answers[k]) ? [] : '');
+    clientName.value = '';
+    submissionDate.value = (new Date()).toISOString().slice(0, 10);
+    alert('Submission deleted.');
+    // Optionally, refresh search results
+    if (searchClient.value) await onSearchClient();
+  } catch (e) {
+    alert('Failed to delete submission.');
+  }
+};
 </script>

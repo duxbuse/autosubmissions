@@ -47,9 +47,33 @@ class FormViewSet(viewsets.ModelViewSet):
             json.dump(serializer.data, f, ensure_ascii=False, indent=2)
         return Response(serializer.data)
 
+
 class SubmissionViewSet(viewsets.ModelViewSet):
     queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        submission = self.get_object()
+        logger.info(f"[SubmissionViewSet.destroy] Deleting submission id={submission.pk}, client_name={submission.client_name}")
+        # Optionally, dump the submission to a JSON file before deletion for audit/debug
+        try:
+            from django.conf import settings
+            from pathlib import Path
+            import datetime
+            submissions_dir = Path(settings.BASE_DIR) / 'submission_json'
+            submissions_dir.mkdir(exist_ok=True)
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_path = submissions_dir / f'deleted_submission_{submission.pk}_{timestamp}.json'
+            # Serialize submission and answers
+            data = SubmissionSerializer(submission).data
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.info(f"[SubmissionViewSet.destroy] Wrote deleted submission to {file_path}")
+        except Exception as file_exc:
+            logger.error(f"[SubmissionViewSet.destroy] Failed to write deleted submission JSON: {file_exc}")
+        # Delete the submission
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'])
     def generate_doc(self, request, pk=None):
