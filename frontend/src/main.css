@@ -173,6 +173,7 @@ main h1 {
   font-weight: 500;
   color: var(--primary-text);
 }
+/* Standard question block */
 .question-block {
   border: 1.5px solid #e0b7d7;
   padding: 1.2rem 1.1rem 1.1rem 1.1rem;
@@ -180,6 +181,34 @@ main h1 {
   border-radius: 10px;
   background: #f6eaf4;
   box-shadow: 0 2px 8px rgba(224, 183, 215, 0.07);
+  position: relative;
+}
+
+/* Visually connect triggered (hidden) questions */
+.question-block .triggered-question {
+  width: 75%;
+  margin-left: auto;
+  margin-top: 0.7rem;
+  margin-bottom: 0.2rem;
+  background: #fff8fc;
+  border: 1.2px dashed #e0b7d7;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(224, 183, 215, 0.08);
+  padding: 0.7rem 1rem 0.7rem 1rem;
+  font-size: 0.98rem;
+  position: relative;
+  right: 0;
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+.question-block .triggered-question:before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 18px;
+  width: 18px;
+  height: 2px;
+  background: #e0b7d7;
+  border-radius: 2px;
 }
 .question-header {
   display: flex;

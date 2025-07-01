@@ -6,15 +6,33 @@
       <p>Form not found.</p>
     </div>
     <form v-else @submit.prevent="submitForm">
-      <div v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx" class="question-block">
-        <label :for="'q_' + question.id">{{ question.text }}</label>
-        <component
-          :is="components[getInputComponent(question)]"
-          v-model="answers[question.id]"
-          :options="question.options"
-          :id="'q_' + question.id"
-        ></component>
-      </div>
+      <template v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx">
+        <div
+          class="question-block"
+          :style="question.hidden && isTriggered(qIdx) ? 'background: transparent; box-shadow: none; border: none; padding: 0; margin-bottom: 0;' : ''"
+        >
+          <!-- If this question is hidden by default and triggered, render as visually connected inside the block -->
+          <div v-if="question.hidden && isTriggered(qIdx)" class="triggered-question">
+            <label :for="'q_' + question.id">{{ question.text }}</label>
+            <component
+              :is="components[getInputComponent(question)]"
+              v-model="answers[question.id]"
+              :options="question.options"
+              :id="'q_' + question.id"
+            ></component>
+          </div>
+          <!-- Otherwise, render as normal question content -->
+          <template v-else>
+            <label :for="'q_' + question.id">{{ question.text }}</label>
+            <component
+              :is="components[getInputComponent(question)]"
+              v-model="answers[question.id]"
+              :options="question.options"
+              :id="'q_' + question.id"
+            ></component>
+          </template>
+        </div>
+      </template>
       <button type="submit">Submit</button>
       <span v-if="submitSuccess" class="success">Submitted!</span>
       <span v-if="submitError" class="error">Error submitting form.</span>
@@ -284,9 +302,13 @@ const submitForm = async () => {
     submitError.value = true;
   }
 };
+
+// Helper: Determine if a hidden question is being triggered (shown due to prior selection)
+function isTriggered(qIdx) {
+  // A question is considered triggered if it is hidden by default and is not the first visible question
+  // (since visibleQuestions is ordered, and hidden questions only appear if triggered)
+  // This logic can be adjusted for more complex cases.
+  const q = visibleQuestions.value[qIdx];
+  return q && q.hidden;
+}
 </script>
-
-
-
-/* Styles moved to main.css for global consistency */
-
