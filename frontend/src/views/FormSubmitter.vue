@@ -54,7 +54,19 @@
         placeholder="Search submissions by client name..."
         style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc;"
       />
-      <div v-if="searchResults.length > 0" class="search-results-tiles" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+      <div
+        v-if="searchResults.length > 0"
+        class="search-results-tiles"
+        :style="{
+          marginTop: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          maxHeight: formHeight ? (formHeight + 'px') : 'unset',
+          overflowY: 'auto',
+        }"
+        ref="tilesColumn"
+      >
         <div
           v-for="sub in searchResults"
           :key="sub.id"
@@ -77,11 +89,43 @@
 
 
 <script setup>
-// --- Submission search state ---
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
+
+// --- State declarations ---
+const tilesColumn = ref(null);
+const formHeight = ref(null);
 const searchClient = ref("");
 const searchResults = ref([]);
 const searchPerformed = ref(false);
 const selectedSubmissionId = ref(null);
+// (removed duplicate declarations)
+const loading = ref(true);
+const form = ref(null);
+const questions = ref([]);
+const answers = reactive({});
+
+// --- For scrollable tiles column ---
+const updateTilesHeight = () => {
+  const formEl = document.querySelector('.form-submitter form');
+  if (formEl) {
+    formHeight.value = formEl.offsetHeight;
+  }
+};
+
+onMounted(() => {
+  nextTick(() => {
+    updateTilesHeight();
+    window.addEventListener('resize', updateTilesHeight);
+  });
+});
+
+watch(
+  [() => questions.value.length, () => loading.value],
+  () => {
+    nextTick(updateTilesHeight);
+  },
+  { immediate: false }
+);
 
 // Search submissions by client name
 const onSearchClient = async () => {
@@ -130,7 +174,6 @@ const loadSubmission = (sub) => {
   submitSuccess.value = false;
   submitError.value = false;
 };
-import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
 import '../main.css';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
@@ -138,10 +181,6 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 const route = useRoute();
 const formId = route.params.id;
-const loading = ref(true);
-const form = ref(null);
-const questions = ref([]);
-const answers = reactive({});
 
 const submitSuccess = ref(false);
 const submitError = ref(false);
