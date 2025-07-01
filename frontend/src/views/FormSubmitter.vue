@@ -317,6 +317,10 @@ const submitForm = async () => {
     submissionId.value = res.data.id || null;
     submitSuccess.value = true;
     setTimeout(() => (submitSuccess.value = false), 2000);
+    // Automatically download the Word doc after successful submission
+    if (submissionId.value) {
+      await downloadDoc();
+    }
   } catch (e) {
     submitError.value = true;
   }

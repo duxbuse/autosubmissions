@@ -57,6 +57,26 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         answers = {a.question.pk: a.value for a in submission.answers.all()}
         questions = Question.objects.filter(form=submission.form).order_by('order')
         doc = Document()
+        # Add header with submission date and client name
+        submission_date = submission.submission_date.strftime('%B %d, %Y') if submission.submission_date else ''
+        client_name = submission.client_name or 'client'
+        # Add header (client above date)
+        header = doc.sections[0].header
+        from docx.shared import Pt
+        from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+        # Client name first
+        p_client = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        p_client.text = f"Client: {client_name}"
+        p_client.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        run_client = p_client.runs[0] if p_client.runs else p_client.add_run()
+        run_client.font.size = Pt(12)
+        # Date second
+        p_date = header.add_paragraph()
+        p_date.text = f"Submission Date: {submission_date}"
+        p_date.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        run_date = p_date.runs[0] if p_date.runs else p_date.add_run()
+        run_date.font.size = Pt(11)
+        # Add answered questions
         for q in questions:
             template = q.output_template or ''
             answer = answers.get(q.pk, '')
@@ -69,8 +89,12 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         f = BytesIO()
         doc.save(f)
         f.seek(0)
+        # Sanitize client name for filename
+        safe_client_name = re.sub(r'[^a-zA-Z0-9_-]', '_', client_name)
+        date_str = submission.submission_date.strftime('%Y%m%d') if submission.submission_date else ''
+        filename = f"submission_{safe_client_name}_{date_str}_{submission.pk}.docx"
         response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        response['Content-Disposition'] = f'attachment; filename="submission_{submission.pk}.docx"'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
         return response
 
