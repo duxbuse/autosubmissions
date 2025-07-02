@@ -1,6 +1,7 @@
 # forms/models.py
 from django.db import models
 
+
 class Form(models.Model):
     """
     Represents a form type, e.g., 'Bail Hearing'.
@@ -9,6 +10,8 @@ class Form(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # --- Section support ---
+    sections = models.JSONField(null=True, blank=True, help_text="List of sections for this form, as an array of objects with id and name.")
 
     def __str__(self):
         return self.name
@@ -40,6 +43,8 @@ class Question(models.Model):
         blank=True,
         help_text="If any option is selected, this question will be shown (for dropdowns)."
     )
+    # --- Section support ---
+    section_id = models.IntegerField(null=True, blank=True, help_text="Section ID this question belongs to (from form.sections array, not a FK)")
 
     class Meta:
         ordering = ['order']

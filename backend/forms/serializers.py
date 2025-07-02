@@ -11,69 +11,113 @@ class OptionSerializer(serializers.ModelSerializer):
         model = Option
         fields = ['id', 'text', 'triggers_question']
 
+
+# --- Section Support ---
+class SectionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
 class QuestionSerializer(serializers.ModelSerializer):
     options = OptionSerializer(many=True, required=False)
+    section_id = serializers.IntegerField(required=False, allow_null=True)
     class Meta:
         model = Question
         fields = [
             'id', 'text', 'question_type', 'order', 'output_template', 'hidden',
-            'any_option_triggers_question', 'options'
+            'any_option_triggers_question', 'options', 'section_id'
         ]
 
 class FormSerializer(serializers.ModelSerializer):
-
-    def to_internal_value(self, data):
-        # Ensure nested questions are always passed through
-        ret = super().to_internal_value(data)
-        if 'questions' in data:
-            ret['questions'] = data['questions']
-        return ret
-    import logging
-    logger = logging.getLogger(__name__)
-
+    sections = SectionSerializer(many=True, required=False)
     questions = QuestionSerializer(many=True, required=False)
 
     class Meta:
         model = Form
-        fields = ['id', 'name', 'description', 'questions']
+        fields = ['id', 'name', 'description', 'sections', 'questions']
+
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        if 'questions' in data:
+            ret['questions'] = data['questions']
+        if 'sections' in data:
+            ret['sections'] = data['sections']
+        return ret
 
     def create(self, validated_data):
-        questions_data = validated_data.pop('questions', [])
         import sys
-        print(f"[FormSerializer.update] RAW questions_data: {questions_data}", file=sys.stderr)
-        form = Form.objects.create(**validated_data)
-        # First pass: create all questions, keep mapping of id to question
+        print("[FormSerializer.create] validated_data IN:", validated_data, file=sys.stderr)
+        questions_data = validated_data.pop('questions', [])
+        sections_data = validated_data.pop('sections', [])
+        print(f"[FormSerializer.create] RAW questions_data: {questions_data}", file=sys.stderr)
+        print(f"[FormSerializer.create] RAW sections_data: {sections_data}", file=sys.stderr)
+        print(f"[FormSerializer.create] validated_data after pop: {validated_data}", file=sys.stderr)
+        # Defensive: ensure section_id is int or None
+        for q in questions_data:
+            print(f"[FormSerializer.create] Pre section_id: {q.get('section_id')}", file=sys.stderr)
+            if 'section_id' in q and q['section_id'] is not None:
+                try:
+                    q['section_id'] = int(q['section_id'])
+                except Exception as exc:
+                    print(f"[FormSerializer.create] Failed to cast section_id: {exc}", file=sys.stderr)
+                    q['section_id'] = None
+            print(f"[FormSerializer.create] Post section_id: {q.get('section_id')}", file=sys.stderr)
+        # Store sections as JSON in form.description for round-trip (optional, not for querying)
+        try:
+            form = Form.objects.create(**validated_data)
+            print(f"[FormSerializer.create] Created form: {form}", file=sys.stderr)
+            # Save sections to the model's sections field
+            form.sections = sections_data if sections_data else []
+            form.save()
+        except Exception as e:
+            print(f"[FormSerializer.create] ERROR creating form: {e}", file=sys.stderr)
+            raise
+        if sections_data:
+            import json as _json
+            form.description = (form.description or '') + f"\n__SECTIONS__:{_json.dumps(sections_data)}"
+            form.save()
+            print(f"[FormSerializer.create] Saved sections to description", file=sys.stderr)
+        # Create questions
         question_map = {}
         for q_data in questions_data:
             options_data = q_data.pop('options', [])
             q_id = q_data.get('id', None)
-            question = Question.objects.create(form=form, **q_data)
+            print(f"[FormSerializer.create] Creating question with data: {q_data}", file=sys.stderr)
+            try:
+                question = Question.objects.create(form=form, **q_data)
+            except Exception as qe:
+                print(f"[FormSerializer.create] ERROR creating question: {qe} | data: {q_data}", file=sys.stderr)
+                raise
             if q_id is not None:
                 question_map[q_id] = question
             else:
                 question_map[question.pk] = question
             question._options_data = options_data
-        # Second pass: create all options, resolve triggers_question
         for question in question_map.values():
             for o_data in getattr(question, '_options_data', []):
                 triggers_q = o_data.pop('triggers_question', None)
-                option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
-                # Always update triggers_question, even if null
+                try:
+                    option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
+                except Exception as oe:
+                    print(f"[FormSerializer.create] ERROR creating option: {oe} | data: {o_data}", file=sys.stderr)
+                    raise
                 if triggers_q is not None:
                     triggers_instance = question_map.get(triggers_q) or Question.objects.filter(pk=triggers_q, form=form).first()
                     option.triggers_question = triggers_instance if triggers_instance else None
                 else:
                     option.triggers_question = None
                 option.save()
+        print(f"[FormSerializer.create] Form creation complete", file=sys.stderr)
         return form
 
     def update(self, instance, validated_data):
         from rest_framework.exceptions import ValidationError
         questions_data = validated_data.pop('questions', [])
+        sections_data = validated_data.pop('sections', [])
         instance.name = validated_data.get('name', instance.name)
         instance.description = validated_data.get('description', instance.description)
+        # Save sections to the model's sections field
+        instance.sections = sections_data if sections_data else []
         instance.save()
-
         # --- Debug: Log all current question/option IDs for this form ---
         current_questions = list(Question.objects.filter(form=instance))
         current_question_ids = [q.id for q in current_questions]
@@ -81,9 +125,6 @@ class FormSerializer(serializers.ModelSerializer):
         import sys
         print(f"[FormSerializer.update] Current DB question IDs: {current_question_ids}", file=sys.stderr)
         print(f"[FormSerializer.update] Current DB option IDs: {current_option_ids}", file=sys.stderr)
-
-        # --- Debug: Log all IDs in the payload ---
-        # More robust extraction: ensure IDs are present and log if not
         payload_question_ids = []
         payload_option_ids = {}
         for q in questions_data:
@@ -98,8 +139,6 @@ class FormSerializer(serializers.ModelSerializer):
                     payload_option_ids[qid].append(oid)
         print(f"[FormSerializer.update] Payload question IDs: {payload_question_ids}", file=sys.stderr)
         print(f"[FormSerializer.update] Payload option IDs: {payload_option_ids}", file=sys.stderr)
-
-        # --- Strict check: Refuse update if any payload question/option id is not in DB ---
         missing_questions = [qid for qid in payload_question_ids if qid not in current_question_ids]
         missing_options = {}
         for qid, oids in payload_option_ids.items():
@@ -113,8 +152,6 @@ class FormSerializer(serializers.ModelSerializer):
         if missing_questions or missing_options:
             print(f"[FormSerializer.update] Refusing update: missing questions: {missing_questions}, missing options: {missing_options}", file=sys.stderr)
             raise ValidationError(f"Update payload contains question/option IDs not present in DB. Missing questions: {missing_questions}, missing options: {missing_options}")
-
-        # First pass: update or create all questions, keep mapping (old id -> new question)
         keep_questions = []
         question_map = {}
         old_to_new_id = {}
@@ -132,18 +169,14 @@ class FormSerializer(serializers.ModelSerializer):
                 old_id = None
                 q_id = question.pk
             keep_questions.append(question.pk)
-            # Map both the new pk and the old id (if present) to the question object
             question_map[question.pk] = question
             if old_id is not None:
                 old_to_new_id[old_id] = question.pk
                 question_map[old_id] = question
             question._options_data = options_data
-
         print(f"[FormSerializer.update] old_to_new_id mapping: {old_to_new_id}", file=sys.stderr)
         print(f"[FormSerializer.update] question_map keys: {list(question_map.keys())}", file=sys.stderr)
-
-        # Second pass: update/create all options, but DO NOT set triggers_question yet
-        all_options = []  # (option, triggers_q)
+        all_options = []
         for question in question_map.values():
             keep_options = []
             for o_data in getattr(question, '_options_data', []):
@@ -155,15 +188,11 @@ class FormSerializer(serializers.ModelSerializer):
                         setattr(option, attr, value)
                 else:
                     option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
-                # Defer setting triggers_question
                 all_options.append((option, triggers_q))
                 option.save()
                 keep_options.append(option.pk)
             Option.objects.filter(question=question).exclude(id__in=keep_options).delete()
-
         print(f"[FormSerializer.update] all_options triggers_q: {[tq for _, tq in all_options]}", file=sys.stderr)
-
-        # Third pass: set triggers_question for all options
         for option, triggers_q in all_options:
             if triggers_q is not None:
                 mapped_id = old_to_new_id.get(triggers_q, triggers_q)
@@ -173,10 +202,7 @@ class FormSerializer(serializers.ModelSerializer):
             else:
                 option.triggers_question = None
             option.save()
-
-        # Delete removed questions
         Question.objects.filter(form=instance).exclude(id__in=keep_questions).delete()
-
         return instance
 
 class AnswerSerializer(serializers.ModelSerializer):

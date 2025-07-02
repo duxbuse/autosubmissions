@@ -35,68 +35,86 @@
         </label>
       </div>
 
-      <h2>Questions</h2>
-      <div v-for="(question, qIdx) in questions" :key="question.id || qIdx" class="question-block">
-        <div class="question-header">
-          <span>Q{{ qIdx + 1 }}</span>
-          <button @click="removeQuestion(qIdx)">Delete</button>
-          <button @click="moveQuestion(qIdx, -1)" :disabled="qIdx === 0">↑</button>
-          <button @click="moveQuestion(qIdx, 1)" :disabled="qIdx === questions.length - 1">↓</button>
-        </div>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <input v-model="question.text" placeholder="Question text" style="flex:1;" />
-          <label style="white-space:nowrap;">
-            <input type="checkbox" v-model="question.hidden" /> Hidden by default
-          </label>
-        </div>
-        <span v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].text" class="error">{{ validationErrors.questions[qIdx].text }}</span>
-        <select v-model="question.question_type">
-          <option value="TEXT">Text</option>
-          <option value="MC">Multiple Choice</option>
-          <option value="CHECK">Checkboxes</option>
-          <option value="DROP">Dropdown</option>
-        </select>
-        <label>
-          <span>Output Template:</span>
-          <textarea v-model="question.output_template" placeholder="e.g. 'The answer is {{answer}}.'"></textarea>
-        </label>
+      <h2>Sections</h2>
+      <div class="sections-list">
+        <button @click="addSection" >+ Add Section</button>
+        <div v-for="(section, sIdx) in sections" :key="section.id" class="section-block">
+          <input v-model="section.name" @input="renameSection(sIdx, section.name)" style="font-weight: bold; font-size: 1.1em; width: 60%;" />
+          <button @click="removeSection(sIdx)" :disabled="sections.length === 1">Delete Section</button>
+          <div class="questions-in-section">
+            <div v-for="(question, qIdx) in questions.filter(q => q.section_id === section.id)" :key="question.id || qIdx" class="question-block">
+              <div class="question-header">
+                <span>Q{{ qIdx + 1 }}</span>
+                <button @click="removeQuestion(questions.findIndex(qq => qq === question))">Delete</button>
+                <button @click="moveQuestion(questions.findIndex(qq => qq === question), -1)" :disabled="questions.findIndex(qq => qq === question) === 0">↑</button>
+                <button @click="moveQuestion(questions.findIndex(qq => qq === question), 1)" :disabled="questions.findIndex(qq => qq === question) === questions.length - 1">↓</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <input v-model="question.text" placeholder="Question text" style="flex:1;" />
+                <label style="white-space:nowrap;">
+                  <input type="checkbox" v-model="question.hidden" /> Hidden by default
+                </label>
+              </div>
+              <span v-if="validationErrors.questions[questions.findIndex(qq => qq === question)] && validationErrors.questions[questions.findIndex(qq => qq === question)].text" class="error">{{ validationErrors.questions[questions.findIndex(qq => qq === question)].text }}</span>
+              <select v-model="question.question_type">
+                <option value="TEXT">Text</option>
+                <option value="MC">Multiple Choice</option>
+                <option value="CHECK">Checkboxes</option>
+                <option value="DROP">Dropdown</option>
+              </select>
+              <label>
+                <span>Output Template:</span>
+                <textarea v-model="question.output_template" placeholder="e.g. 'The answer is {{answer}}.'"></textarea>
+              </label>
 
-        <div v-if="['MC','CHECK','DROP'].includes(question.question_type)">
-          <h4>Options</h4>
-          <div v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].options" class="error">{{ validationErrors.questions[qIdx].options }}</div>
-          <div v-if="question.question_type === 'DROP'" class="option-block">
-            <label>
-              Triggers question for any selection:
-              <select v-model.number="question.any_option_triggers_question">
-                <option :value="null">None</option>
-                <option v-for="q in questions" :key="q.id || q.order" :value="Number(q.id)">{{ q.text }}</option>
-              </select>
-            </label>
+              <div v-if="['MC','CHECK','DROP'].includes(question.question_type)">
+                <h4>Options</h4>
+                <div v-if="validationErrors.questions[questions.findIndex(qq => qq === question)] && validationErrors.questions[questions.findIndex(qq => qq === question)].options" class="error">{{ validationErrors.questions[questions.findIndex(qq => qq === question)].options }}</div>
+                <div v-if="question.question_type === 'DROP'" class="option-block">
+                  <label>
+                    Triggers question for any selection:
+                    <select v-model.number="question.any_option_triggers_question">
+                      <option :value="null">None</option>
+                      <option v-for="q in questions" :key="q.id || q.order" :value="Number(q.id)">{{ q.text }}</option>
+                    </select>
+                  </label>
+                </div>
+                <div v-for="(option, oIdx) in question.options" :key="option.id || oIdx" class="option-block">
+                  <input v-model="option.text" placeholder="Option text" />
+                  <label>
+                    Triggers question:
+                    <select v-model.number="option.triggers_question">
+                      <option :value="null">None</option>
+                      <template v-for="(q, qIdx2) in questions">
+                        <option
+                          v-if="qIdx2 !== questions.findIndex(qq => qq === question)"
+                          :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
+                          :value="qIdx2"
+                        >
+                          {{ q.text }}
+                        </option>
+                      </template>
+                    </select>
+                  </label>
+                  <button @click="removeOption(questions.findIndex(qq => qq === question), oIdx)">Delete Option</button>
+                  <span v-if="validationErrors.questions[questions.findIndex(qq => qq === question)] && validationErrors.questions[questions.findIndex(qq => qq === question)].optionsDetail && validationErrors.questions[questions.findIndex(qq => qq === question)].optionsDetail[oIdx]" class="error">{{ validationErrors.questions[questions.findIndex(qq => qq === question)].optionsDetail[oIdx] }}</span>
+                </div>
+                <button @click="addOption(questions.findIndex(qq => qq === question))">Add Option</button>
+              </div>
+              <div style="margin-top: 0.5em;">
+                <label>Section:
+                  <select v-model="question.section_id">
+                    <option v-for="sec in sections" :key="sec.id" :value="sec.id">{{ sec.name }}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <button @click="addQuestion(section.id)" style="margin-top: 0.5em;">Add Question to Section</button>
           </div>
-          <div v-for="(option, oIdx) in question.options" :key="option.id || oIdx" class="option-block">
-            <input v-model="option.text" placeholder="Option text" />
-            <label>
-              Triggers question:
-              <select v-model.number="option.triggers_question">
-                <option :value="null">None</option>
-                <template v-for="(q, qIdx2) in questions">
-                  <option
-                    v-if="qIdx2 !== qIdx"
-                    :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
-                    :value="qIdx2"
-                  >
-                    {{ q.text }}
-                  </option>
-                </template>
-              </select>
-            </label>
-            <button @click="removeOption(qIdx, oIdx)">Delete Option</button>
-            <span v-if="validationErrors.questions[qIdx] && validationErrors.questions[qIdx].optionsDetail && validationErrors.questions[qIdx].optionsDetail[oIdx]" class="error">{{ validationErrors.questions[qIdx].optionsDetail[oIdx] }}</span>
-          </div>
-          <button @click="addOption(qIdx)">Add Option</button>
+          
         </div>
       </div>
-      <button @click="addQuestion">Add Question</button>
+
       <div class="actions">
         <button @click="saveForm" :disabled="saving">Save Form</button>
         <button @click="cancelEdit" :disabled="saving" style="margin-left: 1rem;">Cancel</button>
@@ -216,7 +234,10 @@ const resetForm = () => {
   questions.value = [];
 };
 
-const addQuestion = () => {
+const addQuestion = (sectionId = null) => {
+  // Default to first section if exists
+  let secId = sectionId;
+  if (!secId && sections.value.length > 0) secId = sections.value[0].id;
   questions.value.push({
     text: '',
     question_type: 'TEXT',
@@ -224,6 +245,7 @@ const addQuestion = () => {
     output_template: '',
     options: [],
     hidden: false,
+    section_id: secId,
     // No id: new question, backend will assign
   });
 };
@@ -305,11 +327,13 @@ const saveForm = async () => {
     const { questions_read, ...formForPayload } = form;
     const payload = {
       ...formForPayload,
+      sections: sections.value.map(s => ({ id: s.id, name: s.name })),
       questions: questions.value.map((q, qIdx) => ({
         ...q,
         // Always include id if present, so backend can match for update
         hidden: !!q.hidden,
         any_option_triggers_question: q.any_option_triggers_question || null,
+        section_id: q.section_id,
         options: q.options.map(o => ({
           text: o.text,
           triggers_question: resolveTriggersQuestion(o, questions.value),
@@ -330,22 +354,6 @@ const saveForm = async () => {
       // After update, update local state from backend response
       updateFormFromBackend(res.data);
     }
-// Helper: Update local form/questions state from backend response (using questions_read)
-function updateFormFromBackend(data) {
-  Object.assign(form, data);
-  // Prefer questions_read if present, else fallback to questions
-  const backendQuestions = data.questions_read || data.questions || [];
-  questions.value = (backendQuestions).map(q => ({
-    ...q,
-    hidden: q.hidden || false,
-    any_option_triggers_question: q.any_option_triggers_question || null,
-    options: q.options ? q.options.map(o => ({
-      ...o,
-      triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
-    })) : [],
-  }));
-  mapTriggersQuestionIdToIndex(questions.value);
-}
     saveSuccess.value = true;
     setTimeout(() => (saveSuccess.value = false), 2000);
   } catch (e) {
@@ -354,6 +362,31 @@ function updateFormFromBackend(data) {
     saving.value = false;
   }
 };
+
+// Helper: Update local form/questions/sections state from backend response (using questions_read)
+function updateFormFromBackend(data) {
+  Object.assign(form, data);
+  // Prefer questions_read if present, else fallback to questions
+  const backendQuestions = data.questions_read || data.questions || [];
+  questions.value = (backendQuestions).map(q => ({
+    ...q,
+    hidden: q.hidden || false,
+    any_option_triggers_question: q.any_option_triggers_question || null,
+    section_id: q.section_id,
+    options: q.options ? q.options.map(o => ({
+      ...o,
+      triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
+    })) : [],
+  }));
+  // Sections
+  if (data.sections) {
+    sections.value = data.sections.map(s => ({ id: s.id, name: s.name }));
+    // Update sectionIdCounter to avoid id collision
+    const maxId = Math.max(0, ...sections.value.map(s => s.id));
+    sectionIdCounter = maxId + 1;
+  }
+  mapTriggersQuestionIdToIndex(questions.value);
+}
 
 // Debug: Watch for changes to triggers_question
 watch(questions, (newVal) => {
@@ -372,4 +405,23 @@ function cancelEdit() {
   formId.value = null;
   fetchAvailableForms();
 }
+
+// --- Section support ---
+const sections = ref([
+  { id: 1, name: 'Section 1' }
+]);
+let sectionIdCounter = 2;
+const addSection = () => {
+  sections.value.push({ id: sectionIdCounter++, name: `Section ${sections.value.length + 1}` });
+};
+const removeSection = (idx) => {
+  const secId = sections.value[idx].id;
+  // Remove all questions in this section
+  questions.value = questions.value.filter(q => q.section_id !== secId);
+  sections.value.splice(idx, 1);
+};
+const renameSection = (idx, newName) => {
+  sections.value[idx].name = newName;
+};
+// --- End section support ---
 </script>

@@ -14,33 +14,44 @@
             <label for="submission_date"><b>Date:</b></label>
             <input id="submission_date" type="date" v-model="submissionDate" required style="margin-bottom: 1rem; width: 100%; max-width: 220px;" />
           </div>
-          <template v-for="(question, qIdx) in visibleQuestions" :key="question.id || qIdx">
-            <div
-              class="question-block"
-              :style="question.hidden && isTriggered(qIdx) ? 'background: transparent; box-shadow: none; border: none; padding: 0; margin-bottom: 0;' : ''"
-            >
-              <!-- If this question is hidden by default and triggered, render as visually connected inside the block -->
-              <div v-if="question.hidden && isTriggered(qIdx)" class="triggered-question">
-                <label :for="'q_' + question.id">{{ question.text }}</label>
-                <component
-                  :is="components[getInputComponent(question)]"
-                  v-model="answers[question.id]"
-                  :options="question.options"
-                  :id="'q_' + question.id"
-                ></component>
+          <div v-if="form && form.sections && form.sections.length">
+            <div v-for="(section, sIdx) in form.sections" :key="section.id" class="form-section-accordion">
+              <div
+                class="section-header"
+                :style="{ cursor: 'pointer', background: '#f7f7f7', borderRadius: '8px', padding: '0.75em 1em', marginBottom: '0.5em', fontWeight: 'bold', fontSize: '1.1em', border: '1px solid #ddd', boxShadow: '0 1px 4px #0001' }"
+                @click="openSection(sIdx)"
+                :aria-expanded="activeSectionIdx === sIdx"
+              >
+                <span>{{ section.name }}</span>
+                <span v-if="activeSectionIdx === sIdx" style="float:right;">▼</span>
+                <span v-else style="float:right;">▶</span>
               </div>
-              <!-- Otherwise, render as normal question content -->
-              <template v-else>
-                <label :for="'q_' + question.id">{{ question.text }}</label>
-                <component
-                  :is="components[getInputComponent(question)]"
-                  v-model="answers[question.id]"
-                  :options="question.options"
-                  :id="'q_' + question.id"
-                ></component>
-              </template>
+              <transition name="fade">
+                <div v-show="activeSectionIdx === sIdx" class="section-body" style="padding: 1em 1.5em 1.5em 1.5em; background: #fff; border-radius: 0 0 8px 8px; border: 1px solid #eee; border-top: none;">
+                  <div v-for="(question, qIdx) in sectionQuestions(section.id)" :key="question.id || qIdx" class="question-block">
+                    <div v-if="question.hidden && isTriggeredByAnswers(question)">
+                      <label :for="'q_' + question.id">{{ question.text }}</label>
+                      <component
+                        :is="components[getInputComponent(question)]"
+                        v-model="answers[question.id]"
+                        :options="question.options"
+                        :id="'q_' + question.id"
+                      ></component>
+                    </div>
+                    <template v-else-if="!question.hidden">
+                      <label :for="'q_' + question.id">{{ question.text }}</label>
+                      <component
+                        :is="components[getInputComponent(question)]"
+                        v-model="answers[question.id]"
+                        :options="question.options"
+                        :id="'q_' + question.id"
+                      ></component>
+                    </template>
+                  </div>
+                </div>
+              </transition>
             </div>
-          </template>
+          </div>
           <button type="submit" :disabled="!canSubmit">Submit</button>
           <button type="button" @click="downloadDoc" :disabled="!submissionId">Download Word Doc</button>
           <button type="button" @click="deleteSubmission" :disabled="!submissionId" style="margin-left: 0.5rem; color: #fff; background: #d9534f; border: none; border-radius: 4px; padding: 0.5em 1em;">Delete Submission</button>
@@ -313,8 +324,36 @@ const fetchForm = async () => {
   loading.value = true;
   try {
     const res = await axios.get(`${API_BASE}/api/forms/${formId}/`);
-    form.value = res.data;
-    questions.value = res.data.questions || [];
+    // Defensive: try to extract sections from both top-level and description (for legacy forms)
+    let sections = res.data.sections;
+    if (!sections || !Array.isArray(sections) || sections.length === 0) {
+      // Try to parse from description if present
+      if (res.data.description && res.data.description.includes('__SECTIONS__:')) {
+        try {
+          const match = res.data.description.match(/__SECTIONS__:(\{.*\}|\[.*\])/);
+          if (match) {
+            sections = JSON.parse(match[1]);
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+    }
+    form.value = { ...res.data, sections };
+    // Defensive: flatten questions from sections if top-level questions is empty
+    let allQuestions = Array.isArray(res.data.questions) ? res.data.questions.slice() : [];
+    if ((!allQuestions || allQuestions.length === 0) && Array.isArray(sections)) {
+      for (const section of sections) {
+        if (Array.isArray(section.questions)) {
+          for (const q of section.questions) {
+            // Attach section_id if missing
+            if (q.section_id === undefined) q.section_id = section.id;
+            allQuestions.push(q);
+          }
+        }
+      }
+    }
+    questions.value = allQuestions;
     // Clear all previous answers
     Object.keys(answers).forEach(k => delete answers[k]);
     // Initialize answers for ALL questions (including hidden)
@@ -543,4 +582,68 @@ const deleteSubmission = async () => {
     alert('Failed to delete submission.');
   }
 };
-</script>
+
+// --- Accordion section logic ---
+const activeSectionIdx = ref(0);
+// Only allow opening next section if all required questions in current section are answered
+function openSection(idx) {
+  if (idx === activeSectionIdx.value) return;
+  // Only allow opening next section if current is complete or previous
+  if (idx > activeSectionIdx.value) {
+    // Check if current section is complete
+    const currentSection = form.value.sections[activeSectionIdx.value];
+    if (!isSectionComplete(currentSection)) {
+      alert('Please complete all questions in this section before proceeding.');
+      return;
+    }
+  }
+  activeSectionIdx.value = idx;
+}
+
+function sectionQuestions(sectionId) {
+  // Return questions for this section, in order
+  return questions.value.filter(q => q.section_id === sectionId);
+}
+
+function isSectionComplete(section) {
+  if (!section) return true;
+  const qs = questions.value.filter(q => q.section_id === section.id && !q.hidden);
+  for (const q of qs) {
+    if (q.question_type === 'CHECK') {
+      if (!answers[q.id] || answers[q.id].length === 0) return false;
+    } else {
+      if (!answers[q.id] || answers[q.id] === '') return false;
+    }
+  }
+  return true;
+}
+
+// Helper: For hidden questions, check if they are triggered by answers
+function isTriggeredByAnswers(question) {
+  // Find all questions before this one (in the same section or previous sections)
+  const idx = questions.value.findIndex(q => q.id === question.id);
+  for (let j = 0; j < idx; ++j) {
+    const prevQ = questions.value[j];
+    if (prevQ.options && prevQ.options.length) {
+      for (const opt of prevQ.options) {
+        if (opt.triggers_question == question.id) {
+          if ((prevQ.question_type === 'MC' || prevQ.question_type === 'DROP') && answers[prevQ.id] === opt.text) {
+            return true;
+          }
+          if (prevQ.question_type === 'CHECK') {
+            const arr = Array.isArray(answers[prevQ.id]) ? answers[prevQ.id] : [];
+            if (arr.includes(opt.text)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    if (prevQ.question_type === 'DROP' && prevQ.any_option_triggers_question == question.id && answers[prevQ.id]) {
+      return true;
+    }
+  }
+  return false;
+}
+// --- End accordion section logic ---
+</script>  
