@@ -58,13 +58,11 @@ class Option(models.Model):
     """
     question = models.ForeignKey(Question, related_name='options', on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
-    triggers_question = models.ForeignKey(
-        Question,
+    triggers_question = models.ManyToManyField(
+        'Question',
         related_name='triggered_by_options',
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
-        help_text="If this option is selected, this question will be shown."
+        help_text="If this option is selected, these questions will be shown."
     )
 
     def __str__(self):

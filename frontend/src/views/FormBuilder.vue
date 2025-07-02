@@ -35,9 +35,9 @@
         </label>
       </div>
 
-      <h2>Sections</h2>
+      <h2>Sections <button @click="addSection" >+ Add Section</button></h2> 
+      
       <div class="sections-list">
-        <button @click="addSection" >+ Add Section</button>
         <div v-for="(section, sIdx) in sections" :key="section.id" class="section-block">
           <input v-model="section.name" @input="renameSection(sIdx, section.name)" style="font-weight: bold; font-size: 1.1em; width: 60%;" />
           <button @click="removeSection(sIdx)" :disabled="sections.length === 1">Delete Section</button>
@@ -82,18 +82,15 @@
                 <div v-for="(option, oIdx) in question.options" :key="option.id || oIdx" class="option-block">
                   <input v-model="option.text" placeholder="Option text" />
                   <label>
-                    Triggers question:
-                    <select v-model.number="option.triggers_question">
-                      <option :value="null">None</option>
-                      <template v-for="(q, qIdx2) in questions">
-                        <option
-                          v-if="qIdx2 !== questions.findIndex(qq => qq === question)"
-                          :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
-                          :value="qIdx2"
-                        >
-                          {{ q.text }}
-                        </option>
-                      </template>
+                    Triggers questions:
+                    <select multiple v-model="option.triggers_question" style="min-width: 120px;">
+                      <option v-for="(q, qIdx2) in questions"
+                        v-if="qIdx2 !== questions.findIndex(qq => qq === question)"
+                        :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
+                        :value="q.id"
+                      >
+                        {{ q.text }}
+                      </option>
                     </select>
                   </label>
                   <button @click="removeOption(questions.findIndex(qq => qq === question), oIdx)">Delete Option</button>
@@ -109,9 +106,9 @@
                 </label>
               </div>
             </div>
-            <button @click="addQuestion(section.id)" style="margin-top: 0.5em;">Add Question to Section</button>
+            <button @click="addQuestion(section.id)" style="margin-top: 0.5em;">Add Question to {{ section.name }}</button>
           </div>
-          
+
         </div>
       </div>
 
@@ -180,24 +177,13 @@ onMounted(() => {
 
 // Helper: Map triggers_question from id to index for UI dropdowns
 function mapTriggersQuestionIdToIndex(questionsArr) {
-  const idToIndex = {};
-  questionsArr.forEach((q, idx) => {
-    if (q.id !== undefined && q.id !== null) idToIndex[q.id] = idx;
-  });
+  // Ensure triggers_question is always an array of IDs
   questionsArr.forEach((q) => {
     if (q.options) {
       q.options.forEach((o) => {
-        // Always map triggers_question from id to index if it's not null/undefined
-        if (o.triggers_question !== null && o.triggers_question !== undefined) {
-          // If triggers_question is already an index (from UI), skip remapping
-          if (typeof o.triggers_question === 'number' && o.triggers_question >= 0 && o.triggers_question < questionsArr.length && questionsArr[o.triggers_question].id === o.triggers_question) {
-            return;
-          }
-          // Map id to index, or null if not found
-          const idx = idToIndex[o.triggers_question];
-          o.triggers_question = (typeof idx === 'number') ? idx : null;
-        } else {
-          o.triggers_question = null;
+        if (!Array.isArray(o.triggers_question)) {
+          if (o.triggers_question == null) o.triggers_question = [];
+          else o.triggers_question = [o.triggers_question];
         }
       });
     }
@@ -208,18 +194,8 @@ const loadForm = async (id) => {
   loading.value = true;
   try {
     const res = await axios.get(`${API_BASE}/api/forms/${id}/`);
-    Object.assign(form, res.data);
-    questions.value = (res.data.questions || []).map(q => ({
-      ...q,
-      hidden: q.hidden || false,
-      any_option_triggers_question: q.any_option_triggers_question || null,
-      options: q.options ? q.options.map(o => ({
-        ...o,
-        triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
-      })) : [],
-    }));
-    // Map triggers_question from id to index for UI
-    mapTriggersQuestionIdToIndex(questions.value);
+    // Always use updateFormFromBackend to ensure sections and questions are set correctly
+    updateFormFromBackend(res.data);
     formId.value = id;
   } catch (e) {
     // handle error
@@ -263,7 +239,7 @@ const moveQuestion = (idx, dir) => {
 };
 
 const addOption = qIdx => {
-  questions.value[qIdx].options.push({ text: '', triggers_question: null });
+  questions.value[qIdx].options.push({ text: '', triggers_question: [] });
   // No id: new option, backend will assign
 };
 const removeOption = (qIdx, oIdx) => {
@@ -308,10 +284,12 @@ function validateForm() {
 
 // Helper to resolve triggers_question index to id for payload
 function resolveTriggersQuestion(option, questionsArr) {
-  if (option.triggers_question == null) return null;
-  const idx = option.triggers_question;
-  const q = questionsArr[idx];
-  return q && q.id !== undefined ? q.id : null;
+  // For payload: always return array of IDs
+  if (!option.triggers_question) return [];
+  if (Array.isArray(option.triggers_question)) {
+    return option.triggers_question.filter(id => id != null);
+  }
+  return option.triggers_question != null ? [option.triggers_question] : [];
 }
 
 const saveForm = async () => {
@@ -368,22 +346,57 @@ function updateFormFromBackend(data) {
   Object.assign(form, data);
   // Prefer questions_read if present, else fallback to questions
   const backendQuestions = data.questions_read || data.questions || [];
-  questions.value = (backendQuestions).map(q => ({
-    ...q,
-    hidden: q.hidden || false,
-    any_option_triggers_question: q.any_option_triggers_question || null,
-    section_id: q.section_id,
-    options: q.options ? q.options.map(o => ({
-      ...o,
-      triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
-    })) : [],
-  }));
+  // Assign questions only if they have a valid section_id; do not assign to first section by default
+  if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+    questions.value = (backendQuestions).map((q) => {
+      let sectionId = q.section_id != null ? Number(q.section_id) : null;
+      return {
+        ...q,
+        hidden: q.hidden || false,
+        any_option_triggers_question: q.any_option_triggers_question || null,
+        section_id: sectionId,
+        options: q.options ? q.options.map(o => ({
+          ...o,
+          triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
+        })) : [],
+      };
+    });
+  } else {
+    questions.value = (backendQuestions).map(q => ({
+      ...q,
+      hidden: q.hidden || false,
+      any_option_triggers_question: q.any_option_triggers_question || null,
+      section_id: q.section_id != null ? Number(q.section_id) : null,
+      options: q.options ? q.options.map(o => ({
+        ...o,
+        triggers_question: o.triggers_question !== undefined ? o.triggers_question : null,
+      })) : [],
+    }));
+  }
   // Sections
-  if (data.sections) {
-    sections.value = data.sections.map(s => ({ id: s.id, name: s.name }));
+  if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+    sections.value = data.sections.map(s => ({ id: Number(s.id), name: s.name }));
     // Update sectionIdCounter to avoid id collision
     const maxId = Math.max(0, ...sections.value.map(s => s.id));
     sectionIdCounter = maxId + 1;
+  } else {
+    // Reconstruct sections from questions if missing
+    const sectionMap = {};
+    questions.value.forEach(q => {
+      if (q.section_id != null) {
+        const secId = Number(q.section_id);
+        if (!sectionMap[secId]) {
+          sectionMap[secId] = { id: secId, name: `Section ${secId}` };
+        }
+      }
+    });
+    const sectionArr = Object.values(sectionMap);
+    // If no sections found, create a default
+    if (sectionArr.length === 0) {
+      sectionArr.push({ id: 1, name: 'Section 1' });
+    }
+    sections.value = sectionArr;
+    sectionIdCounter = Math.max(...sections.value.map(s => s.id)) + 1;
   }
   mapTriggersQuestionIdToIndex(questions.value);
 }

@@ -626,7 +626,10 @@ function isTriggeredByAnswers(question) {
     const prevQ = questions.value[j];
     if (prevQ.options && prevQ.options.length) {
       for (const opt of prevQ.options) {
-        if (opt.triggers_question == question.id) {
+        // Multi-trigger support: triggers_question is an array of IDs
+        let triggers = opt.triggers_question;
+        if (!Array.isArray(triggers)) triggers = triggers != null ? [triggers] : [];
+        if (triggers.includes(question.id)) {
           if ((prevQ.question_type === 'MC' || prevQ.question_type === 'DROP') && answers[prevQ.id] === opt.text) {
             return true;
           }

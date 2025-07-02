@@ -1,15 +1,34 @@
 from rest_framework import serializers
 from .models import Form, Question, Option, Submission, Answer
 
-class OptionSerializer(serializers.ModelSerializer):
-    # Accept integer for triggers_question, do not validate existence here
-    triggers_question = serializers.SerializerMethodField()
 
-    def get_triggers_question(self, obj):
-        return obj.triggers_question.id if obj.triggers_question else None
+class OptionSerializer(serializers.ModelSerializer):
+    # Accept list of question IDs for triggers_question
+    triggers_question = serializers.PrimaryKeyRelatedField(
+        queryset=Question.objects.all(),
+        many=True,
+        required=False
+    )
+
     class Meta:
         model = Option
         fields = ['id', 'text', 'triggers_question']
+
+    def create(self, validated_data):
+        triggers = validated_data.pop('triggers_question', [])
+        option = Option.objects.create(**validated_data)
+        if triggers:
+            option.triggers_question.set(triggers)
+        return option
+
+    def update(self, instance, validated_data):
+        triggers = validated_data.pop('triggers_question', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if triggers is not None:
+            instance.triggers_question.set(triggers)
+        return instance
 
 
 # --- Section Support ---
@@ -176,7 +195,6 @@ class FormSerializer(serializers.ModelSerializer):
             question._options_data = options_data
         print(f"[FormSerializer.update] old_to_new_id mapping: {old_to_new_id}", file=sys.stderr)
         print(f"[FormSerializer.update] question_map keys: {list(question_map.keys())}", file=sys.stderr)
-        all_options = []
         for question in question_map.values():
             keep_options = []
             for o_data in getattr(question, '_options_data', []):
@@ -188,20 +206,23 @@ class FormSerializer(serializers.ModelSerializer):
                         setattr(option, attr, value)
                 else:
                     option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
-                all_options.append((option, triggers_q))
+                # Set ManyToMany triggers_question
+                if triggers_q is not None:
+                    # triggers_q may be a list or a single value
+                    if not isinstance(triggers_q, list):
+                        triggers_ids = [triggers_q]
+                    else:
+                        triggers_ids = triggers_q
+                    # Map old IDs to new IDs if needed
+                    mapped_ids = [old_to_new_id.get(tid, tid) for tid in triggers_ids if tid is not None]
+                    triggers_instances = [question_map.get(mid) or Question.objects.filter(pk=mid, form=instance).first() for mid in mapped_ids]
+                    triggers_instances = [ti for ti in triggers_instances if ti]
+                    option.triggers_question.set(triggers_instances)
+                else:
+                    option.triggers_question.clear()
                 option.save()
                 keep_options.append(option.pk)
             Option.objects.filter(question=question).exclude(id__in=keep_options).delete()
-        print(f"[FormSerializer.update] all_options triggers_q: {[tq for _, tq in all_options]}", file=sys.stderr)
-        for option, triggers_q in all_options:
-            if triggers_q is not None:
-                mapped_id = old_to_new_id.get(triggers_q, triggers_q)
-                triggers_instance = question_map.get(mapped_id) or Question.objects.filter(pk=mapped_id, form=instance).first()
-                option.triggers_question = triggers_instance if triggers_instance else None
-                print(f"[FormSerializer.update] Setting triggers_question for option {option.id}: triggers_q={triggers_q}, mapped_id={mapped_id}, triggers_instance_id={getattr(triggers_instance, 'id', None)}", file=sys.stderr)
-            else:
-                option.triggers_question = None
-            option.save()
         Question.objects.filter(form=instance).exclude(id__in=keep_questions).delete()
         return instance
 
