@@ -82,6 +82,6 @@ class Answer(models.Model):
     A user's answer to a specific question in a submission.
     """
     submission = models.ForeignKey(Submission, related_name='answers', on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.PROTECT)
+    question = models.ForeignKey(Question, on_delete=models.SET_NULL, null=True, blank=True)
     value = models.TextField() # Stores text, or a JSON list of selected option IDs
 

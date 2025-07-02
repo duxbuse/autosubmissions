@@ -223,7 +223,14 @@ class FormSerializer(serializers.ModelSerializer):
                 option.save()
                 keep_options.append(option.pk)
             Option.objects.filter(question=question).exclude(id__in=keep_options).delete()
-        Question.objects.filter(form=instance).exclude(id__in=keep_questions).delete()
+        # Before deleting questions, remove all references to them in triggers_question of all options
+        to_delete_questions = Question.objects.filter(form=instance).exclude(id__in=keep_questions)
+        to_delete_ids = list(to_delete_questions.values_list('id', flat=True))
+        if to_delete_ids:
+            # Remove references in Option.triggers_question
+            for option in Option.objects.filter(question__form=instance):
+                option.triggers_question.remove(*[tid for tid in to_delete_ids if tid in option.triggers_question.values_list('id', flat=True)])
+        to_delete_questions.delete()
         return instance
 
 class AnswerSerializer(serializers.ModelSerializer):

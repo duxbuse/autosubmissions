@@ -226,7 +226,23 @@ const addQuestion = (sectionId = null) => {
   });
 };
 const removeQuestion = idx => {
+  // Get the id of the question to be removed (if it exists)
+  const removedQuestion = questions.value[idx];
+  const removedId = removedQuestion && removedQuestion.id !== undefined ? removedQuestion.id : null;
+  // Remove the question
   questions.value.splice(idx, 1);
+  // Remove all references to this question in triggers_question of all options in all questions
+  if (removedId !== null) {
+    questions.value.forEach(q => {
+      if (q.options && Array.isArray(q.options)) {
+        q.options.forEach(o => {
+          if (Array.isArray(o.triggers_question)) {
+            o.triggers_question = o.triggers_question.filter(tid => tid !== removedId);
+          }
+        });
+      }
+    });
+  }
   questions.value.forEach((q, i) => (q.order = i + 1));
 };
 const moveQuestion = (idx, dir) => {
