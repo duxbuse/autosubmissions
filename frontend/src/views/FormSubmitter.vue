@@ -28,8 +28,8 @@
               </div>
               <transition name="fade">
                 <div v-show="activeSectionIdx === sIdx" class="section-body" style="padding: 1em 1.5em 1.5em 1.5em; background: #fff; border-radius: 0 0 8px 8px; border: 1px solid #eee; border-top: none;">
-                  <div v-for="(question, qIdx) in sectionQuestions(section.id)" :key="question.id || qIdx" class="question-block">
-                    <div v-if="question.hidden && isTriggeredByAnswers(question)">
+                  <template v-for="(question, qIdx) in sectionQuestions(section.id)" :key="question.id || qIdx">
+                    <div v-if="!question.hidden || (question.hidden && isTriggeredByAnswers(question))" class="question-block">
                       <label :for="'q_' + question.id">{{ question.text }}</label>
                       <component
                         :is="components[getInputComponent(question)]"
@@ -38,16 +38,7 @@
                         :id="'q_' + question.id"
                       ></component>
                     </div>
-                    <template v-else-if="!question.hidden">
-                      <label :for="'q_' + question.id">{{ question.text }}</label>
-                      <component
-                        :is="components[getInputComponent(question)]"
-                        v-model="answers[question.id]"
-                        :options="question.options"
-                        :id="'q_' + question.id"
-                      ></component>
-                    </template>
-                  </div>
+                  </template>
                 </div>
               </transition>
             </div>
