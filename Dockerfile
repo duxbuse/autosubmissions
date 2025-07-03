@@ -31,26 +31,21 @@ WORKDIR /app
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# # Install system dependencies required by psycopg2 (for PostgreSQL)
-# # Updating package lists and installing dependencies in one RUN command reduces image layers.
-# RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc && apt-get clean
-
-RUN uv pip install --system gunicorn
-
 # Install Python dependencies from pyproject.toml
 COPY backend/pyproject.toml backend/uv.lock ./
-RUN uv sync
+RUN uv add gunicorn && uv sync
 
 # Copy the backend application code into the container
 COPY backend/ .
 
 # Copy the built frontend assets from the frontend-builder stage
 # Your Django `STATICFILES_DIRS` setting should be configured to include this `/app/static` directory.
-COPY --from=frontend-builder /app/frontend/dist /app/static/
+COPY --from=frontend-builder /app/frontend/dist /app/static
 
 # Expose port 8000 to allow communication to the Gunicorn server
 EXPOSE 8000
 
 # Run the application using Gunicorn
 # This command assumes your Django project's WSGI file is located at `form_generator.wsgi`.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
+CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
+ 

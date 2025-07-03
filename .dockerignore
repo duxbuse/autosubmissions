@@ -1,2 +1,6 @@
 **/node_modules
 **/.venv
+db.sqlite3
+submission_json
+form_json
+*.md

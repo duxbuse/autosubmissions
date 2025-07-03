@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autosubmissions-backend
+    volumes:
+      - ./backend:/app/backend
+      - static_volume:/app/static
+    depends_on:
+      - db
+    environment:
+      - DJANGO_SETTINGS_MODULE=form_generator.settings
+    expose:
+      - 8000
+    command: ["uv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
+
+  db:
+    image: postgres:15
+    container_name: autosubmissions-db
+    environment:
+      POSTGRES_DB: autosubmissions
+      POSTGRES_USER: autosubmissions
+      POSTGRES_PASSWORD: autosubmissions
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: autosubmissions-nginx
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/static:ro
+
+volumes:
+  postgres_data:
+  static_volume:
