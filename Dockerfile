@@ -1,4 +1,3 @@
-# syntax=docker.io/docker/dockerfile:1.7-labs
 # Dockerfile for the Django + Vue.js application
 
 # --- Stage 1: Build Vue.js Frontend ---
@@ -29,15 +28,18 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies required by psycopg2 (for PostgreSQL)
-# Updating package lists and installing dependencies in one RUN command reduces image layers.
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc && apt-get clean
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# # Install system dependencies required by psycopg2 (for PostgreSQL)
+# # Updating package lists and installing dependencies in one RUN command reduces image layers.
+# RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc && apt-get clean
+
+RUN uv pip install --system gunicorn
 
 # Install Python dependencies from pyproject.toml
-# For production, it's often better to use a requirements.txt file,
-# but this works for the current project structure.
-COPY backend/pyproject.toml ./
-RUN pip install --no-cache-dir django djangorestframework django-cors-headers psycopg2-binary python-docx gunicorn
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync
 
 # Copy the backend application code into the container
 COPY backend/ .
@@ -51,5 +53,4 @@ EXPOSE 8000
 
 # Run the application using Gunicorn
 # This command assumes your Django project's WSGI file is located at `form_generator.wsgi`.
-# You may need to adjust this based on your project's name.
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
