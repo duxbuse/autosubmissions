@@ -13,9 +13,9 @@ services:
       - db
     environment:
       - DJANGO_SETTINGS_MODULE=form_generator.settings
-    expose:
-      - 8000
-    command: ["uv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
+      - DJANGO_ENV=compose
+    ports:
+      - 8000:8000
 
   db:
     image: postgres:15

@@ -47,5 +47,4 @@ EXPOSE 8000
 
 # Run the application using Gunicorn
 # This command assumes your Django project's WSGI file is located at `form_generator.wsgi`.
-CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "form_generator.wsgi:application"]
- 
+CMD uv run ./manage.py migrate --noinput && uv run gunicorn --bind 0.0.0.0:8000 form_generator.wsgi:application

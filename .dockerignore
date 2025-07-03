@@ -1,6 +1,6 @@
 **/node_modules
 **/.venv
-db.sqlite3
-submission_json
-form_json
+backend/db.sqlite3
+backend/submission_json
+backend/form_json
 *.md

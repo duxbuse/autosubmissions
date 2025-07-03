@@ -61,12 +61,12 @@
 </template>
 
 <script setup>
-import { useFormBuilder } from '../composables/useFormBuilder';
-import { useFormSections } from '../composables/useFormSections';
-import FormMeta from '../components/builder/FormMeta.vue';
-import SectionEditor from '../components/builder/SectionEditor.vue';
-import QuestionEditor from '../components/builder/QuestionEditor.vue';
-import '../main.css';
+import { useFormBuilder } from '@/composables/useFormBuilder';
+import { useFormSections } from '@/composables/useFormSections';
+import FormMeta from '@/components/builder/FormMeta.vue';
+import SectionEditor from '@/components/builder/SectionEditor.vue';
+import QuestionEditor from '@/components/builder/QuestionEditor.vue';
+import '@/main.css';
 
 const {
   mode,

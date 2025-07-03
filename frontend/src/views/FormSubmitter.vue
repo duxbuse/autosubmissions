@@ -51,13 +51,13 @@
 <script setup>
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { useForm } from '../composables/useForm';
-import { useSubmissions } from '../composables/useSubmissions';
-import FormHeader from '../components/form/FormHeader.vue';
-import FormSection from '../components/form/FormSection.vue';
-import Question from '../components/form/Question.vue';
-import SubmissionSearch from '../components/submission/SubmissionSearch.vue';
-import SubmissionList from '../components/submission/SubmissionList.vue';
+import { useForm } from '@/composables/useForm';
+import { useSubmissions } from '@/composables/useSubmissions';
+import FormHeader from '@/components/form/FormHeader.vue';
+import FormSection from '@/components/form/FormSection.vue';
+import Question from '@/components/form/Question.vue';
+import SubmissionSearch from '@/components/submission/SubmissionSearch.vue';
+import SubmissionList from '@/components/submission/SubmissionList.vue';
 import '../main.css';
 
 const route = useRoute();
