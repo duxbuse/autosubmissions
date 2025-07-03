@@ -52,23 +52,25 @@ We will adopt a **Monolithic Architecture** with a decoupled frontend. This appr
 
 ## 4. Backend Design (Python / Django)
 
-The backend will be a single Django project containing several focused apps.
+The backend is a Django project containing several focused apps, while the frontend is a standalone Vue.js application.
 
-### 4.1. Django App Structure
+### 4.1. Project File Structure
+
+The project is organized into a separate backend and frontend.
 
 ```
-form_generator/
-├── form_generator/  # Core project settings
-│   ├── settings.py
-│   └── urls.py
-├── forms/           # The core application for forms and submissions
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-├── users/           # For user authentication and management (optional but recommended)
-│   └── ...
-└── manage.py
+autosubmissions/
+├── backend/
+│   ├── manage.py
+│   ├── form_generator/  # Core Django project settings
+│   ├── forms/           # App for core models (Form, Question, etc.)
+│   ├── form_json/       # App to generate form structures as JSON for the frontend
+│   └── submission_json/ # App to handle incoming JSON submissions
+└── frontend/
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    └── src/             # Vue.js application source
 ```
 
 ### 4.2. Database Models (`forms/models.py`)
