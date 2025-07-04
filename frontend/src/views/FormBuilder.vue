@@ -20,7 +20,7 @@
       </div>
     </div>
     <div v-else>
-      <FormMeta :form="form" :validationErrors="validationErrors" @update:form="form = $event" />
+      <FormMeta :form="form" :validationErrors="validationErrors" @update:form="updateFormMeta" />
 
       <h2>Sections <button @click="addSection">+ Add Section</button></h2>
 
@@ -31,6 +31,7 @@
           :section="section"
           :isOpen="activeSectionIdx === sIdx"
           @toggle="openSection(sIdx)"
+          @rename="renameSection(sIdx, $event)"
         >
           <div class="questions-in-section">
             <QuestionEditor
@@ -51,7 +52,7 @@
       </div>
 
       <div class="actions">
-        <button @click="saveForm" :disabled="saving">Save Form</button>
+        <button @click="onSaveForm" :disabled="saving">Save Form</button>
         <button @click="cancelEdit" :disabled="saving" style="margin-left: 1rem;">Cancel</button>
         <span v-if="saveSuccess" class="success">Saved!</span>
         <span v-if="saveError" class="error">Error saving form.</span>
@@ -67,6 +68,7 @@ import FormMeta from '@/components/builder/FormMeta.vue';
 import SectionEditor from '@/components/builder/SectionEditor.vue';
 import QuestionEditor from '@/components/builder/QuestionEditor.vue';
 import '@/main.css';
+
 
 const {
   mode,
@@ -84,7 +86,8 @@ const {
   loadForm,
   saveForm,
   cancelEdit,
-  sectionIdCounter
+  sectionIdCounter,
+  updateFormMeta
 } = useFormBuilder();
 
 const {
@@ -100,7 +103,7 @@ const addQuestion = (sectionId = null) => {
   if (!secId && sections.value.length > 0) secId = sections.value[0].id;
   questions.value.push({
     text: '',
-    question_type: 'TEXT',
+    question_type: 'TEXT', // default, but can be changed to 'DATE' in UI
     order: questions.value.length + 1,
     output_template: '',
     options: [],
@@ -134,6 +137,12 @@ const moveQuestion = (idx, dir) => {
   questions.value[idx] = questions.value[newIdx];
   questions.value[newIdx] = temp;
   questions.value.forEach((q, i) => (q.order = i + 1));
+};
+
+
+const onSaveForm = () => {
+  console.debug('[FormBuilder.vue] onSaveForm called', { form, questions, sections });
+  saveForm();
 };
 
 const updateQuestion = (idx, question) => {

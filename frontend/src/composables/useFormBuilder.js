@@ -1,4 +1,3 @@
-
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 
@@ -23,14 +22,20 @@ export function useFormBuilder() {
   });
 
   const selectMode = (m) => {
+    const prevMode = mode.value;
+    console.debug('[selectMode] prevMode:', prevMode, 'newMode:', m);
     mode.value = m;
     if (m === 'edit') {
       fetchAvailableForms();
       formId.value = null;
     } else if (m === 'new') {
       formId.value = 'new';
-      resetForm();
+      if (prevMode !== 'new') {
+        console.debug('[selectMode] Calling resetForm()');
+        resetForm();
+      }
     }
+    console.debug('[selectMode] form:', JSON.stringify(form), 'formId:', formId.value);
   };
 
   const fetchAvailableForms = async () => {
@@ -78,45 +83,63 @@ export function useFormBuilder() {
   };
 
   const resetForm = () => {
+    console.debug('[resetForm] Resetting form');
     form.name = '';
     form.description = '';
     questions.value = [];
     sections.value = [{ id: 1, name: 'Section 1' }];
     sectionIdCounter = 2;
+    console.debug('[resetForm] After reset:', JSON.stringify(form));
   };
 
-  function validateForm() {
-    let valid = true;
-    validationErrors.form = {};
-    validationErrors.questions = [];
-    if (!form.name || !form.name.trim()) {
-      validationErrors.form.name = 'Form name is required.';
-      valid = false;
-    }
-    questions.value.forEach((q, qIdx) => {
-      const qErr = {};
-      if (!q.text || !q.text.trim()) {
-        qErr.text = 'Question text is required.';
-        valid = false;
-      }
-      if (["MC", "CHECK", "DROP"].includes(q.question_type)) {
-        if (!q.options || q.options.length === 0) {
-          qErr.options = 'At least one option is required.';
-          valid = false;
-        } else {
-          q.options.forEach((o, oIdx) => {
-            if (!o.text || !o.text.trim()) {
-              if (!qErr.optionsDetail) qErr.optionsDetail = {};
-              qErr.optionsDetail[oIdx] = 'Option text is required.';
-              valid = false;
-            }
-          });
-        }
-      }
-      validationErrors.questions[qIdx] = qErr;
-    });
-    return valid;
+  // Only call resetForm when starting a new form, not after save
+function validateFormAndScroll() {
+  let valid = true;
+  validationErrors.form = {};
+  validationErrors.questions = [];
+  let firstInvalidQuestionIdx = null;
+  if (!form.name || !form.name.trim()) {
+    validationErrors.form.name = 'Form name is required.';
+    valid = false;
   }
+  questions.value.forEach((q, qIdx) => {
+    const qErr = {};
+    if (!q.text || !q.text.trim()) {
+      qErr.text = 'Question text is required.';
+      valid = false;
+      if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+    }
+    if (["MC", "CHECK", "DROP"].includes(q.question_type)) {
+      if (!q.options || q.options.length === 0) {
+        qErr.options = 'At least one option is required.';
+        valid = false;
+        if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+      } else {
+        q.options.forEach((o, oIdx) => {
+          if (!o.text || !o.text.trim()) {
+            if (!qErr.optionsDetail) qErr.optionsDetail = {};
+            qErr.optionsDetail[oIdx] = 'Option text is required.';
+            valid = false;
+            if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+          }
+        });
+      }
+    }
+    validationErrors.questions[qIdx] = qErr;
+  });
+  // Scroll to first invalid question if any
+  if (firstInvalidQuestionIdx !== null) {
+    setTimeout(() => {
+      const el = document.querySelector(`[data-question-idx="${firstInvalidQuestionIdx}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlight-validation');
+        setTimeout(() => el.classList.remove('highlight-validation'), 2000);
+      }
+    }, 100);
+  }
+  return valid;
+}
 
   function resolveTriggersQuestion(option, questionsArr) {
     if (!option.triggers_question) return [];
@@ -127,8 +150,10 @@ export function useFormBuilder() {
   }
 
   const saveForm = async () => {
-    if (!validateForm()) {
+    console.debug('[saveForm] form before validate:', JSON.stringify(form));
+    if (!validateFormAndScroll()) {
       saveError.value = true;
+      console.debug('[saveForm] Validation failed. form:', JSON.stringify(form));
       return;
     }
     saving.value = true;
@@ -151,6 +176,7 @@ export function useFormBuilder() {
           })),
         })),
       };
+      console.debug('[saveForm] payload:', JSON.stringify(payload));
       let res;
       if (formId.value === 'new') {
         res = await axios.post(`${API_BASE}/api/forms/`, payload);
@@ -165,8 +191,10 @@ export function useFormBuilder() {
       setTimeout(() => (saveSuccess.value = false), 2000);
     } catch (e) {
       saveError.value = true;
+      console.debug('[saveForm] Error:', e);
     } finally {
       saving.value = false;
+      console.debug('[saveForm] Done. form:', JSON.stringify(form));
     }
   };
 
@@ -229,6 +257,11 @@ export function useFormBuilder() {
     fetchAvailableForms();
   }
 
+    // Use this to update form meta reactively from FormMeta
+  function updateFormMeta(newForm) {
+    Object.assign(form, newForm);
+  }
+
   return {
     mode,
     formId,
@@ -245,6 +278,7 @@ export function useFormBuilder() {
     loadForm,
     saveForm,
     cancelEdit,
-    sectionIdCounter
+    sectionIdCounter,
+    updateFormMeta
   };
 }

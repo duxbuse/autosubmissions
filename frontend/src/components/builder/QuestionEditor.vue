@@ -1,6 +1,6 @@
 
 <template>
-  <div class="question-block">
+  <div class="question-block" :data-question-idx="questionIndex">
     <div class="question-header">
       <span>Q{{ questionIndex + 1 }}</span>
       <button @click="$emit('remove')">Delete</button>
@@ -16,10 +16,12 @@
     <span v-if="validationError && validationError.text" class="error">{{ validationError.text }}</span>
     <select :value="question.question_type" @change="updateQuestion('question_type', $event.target.value)">
       <option value="TEXT">Text</option>
+      <option value="DATE">Date</option>
       <option value="MC">Multiple Choice</option>
       <option value="CHECK">Checkboxes</option>
       <option value="DROP">Dropdown</option>
     </select>
+
     <label>
       <span>Output Template:</span>
       <textarea :value="question.output_template" @input="updateQuestion('output_template', $event.target.value)" placeholder="e.g. 'The answer is {{answer}}.'"></textarea>
@@ -60,8 +62,10 @@
   </div>
 </template>
 
+
 <script setup>
 import OptionEditor from './OptionEditor.vue';
+import InputDate from '@/components/form/input/InputDate.vue';
 
 const props = defineProps(['question', 'questions', 'sections', 'questionIndex', 'validationError']);
 const emit = defineEmits(['update:question', 'remove', 'move']);

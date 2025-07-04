@@ -4,10 +4,10 @@
     <div
       class="section-header"
       :style="{ cursor: 'pointer', background: '#f7f7f7', borderRadius: '8px', padding: '0.75em 1em', marginBottom: '0.5em', fontWeight: 'bold', fontSize: '1.1em', border: '1px solid #ddd', boxShadow: '0 1px 4px #0001' }"
-      @click="$emit('toggle')"
       :aria-expanded="isOpen"
     >
-      <span>{{ section.name }}</span>
+      <span v-if="!editing" @click="$emit('toggle')" @dblclick="startEditing" style="user-select: none;">{{ section.name }}</span>
+      <input v-else type="text" v-model="editName" @blur="finishEditing" @keyup.enter="finishEditing" @keyup.esc="cancelEditing" style="font-size:1em; font-weight:bold; width: 60%;" />
       <span v-if="isOpen" style="float:right;">▼</span>
       <span v-else style="float:right;">▶</span>
     </div>
@@ -20,8 +20,32 @@
 </template>
 
 <script setup>
-  defineProps(['section', 'isOpen']);
-  defineEmits(['toggle']);
+import { ref, watch } from 'vue';
+const props = defineProps(['section', 'isOpen']);
+const emit = defineEmits(['toggle', 'rename']);
+
+const editing = ref(false);
+const editName = ref(props.section.name);
+
+watch(() => props.section.name, (val) => {
+  if (!editing.value) editName.value = val;
+});
+
+const startEditing = (e) => {
+  editing.value = true;
+  editName.value = props.section.name;
+  e.stopPropagation();
+};
+const finishEditing = () => {
+  editing.value = false;
+  if (editName.value.trim() && editName.value !== props.section.name) {
+    emit('rename', editName.value.trim());
+  }
+};
+const cancelEditing = () => {
+  editing.value = false;
+  editName.value = props.section.name;
+};
 </script>
 
 <style scoped>

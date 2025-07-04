@@ -18,6 +18,7 @@ import InputParagraph from './input/InputParagraph.vue';
 import InputMc from './input/InputMc.vue';
 import InputCheck from './input/InputCheck.vue';
 import InputDrop from './input/InputDrop.vue';
+import InputDate from './input/InputDate.vue';
 
 const props = defineProps(['question', 'modelValue', 'isTriggered']);
 const emit = defineEmits(['update:modelValue']);
@@ -27,12 +28,14 @@ const answer = computed({
   set: (value) => emit('update:modelValue', value),
 });
 
+
 const components = {
   'input-text': InputText,
   'input-paragraph': InputParagraph,
   'input-mc': InputMc,
   'input-check': InputCheck,
   'input-drop': InputDrop,
+  'input-date': InputDate,
 };
 
 const inputComponent = computed(() => {
@@ -47,6 +50,8 @@ const inputComponent = computed(() => {
       return components['input-check'];
     case 'DROP':
       return components['input-drop'];
+    case 'DATE':
+      return components['input-date'];
     default:
       return components['input-text'];
   }
