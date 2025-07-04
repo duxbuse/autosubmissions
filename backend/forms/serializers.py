@@ -54,6 +54,7 @@ class FormSerializer(serializers.ModelSerializer):
         model = Form
         fields = ['id', 'name', 'description', 'sections', 'questions']
 
+
     def to_internal_value(self, data):
         ret = super().to_internal_value(data)
         if 'questions' in data:
@@ -62,50 +63,33 @@ class FormSerializer(serializers.ModelSerializer):
             ret['sections'] = data['sections']
         return ret
 
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        # Ensure description is just the plain description, not JSON or with sections
+        rep['description'] = instance.description if hasattr(instance, 'description') else rep.get('description', '')
+        return rep
+
     def create(self, validated_data):
-        import sys
-        print("[FormSerializer.create] validated_data IN:", validated_data, file=sys.stderr)
         questions_data = validated_data.pop('questions', [])
         sections_data = validated_data.pop('sections', [])
-        print(f"[FormSerializer.create] RAW questions_data: {questions_data}", file=sys.stderr)
-        print(f"[FormSerializer.create] RAW sections_data: {sections_data}", file=sys.stderr)
-        print(f"[FormSerializer.create] validated_data after pop: {validated_data}", file=sys.stderr)
         # Defensive: ensure section_id is int or None
         for q in questions_data:
-            print(f"[FormSerializer.create] Pre section_id: {q.get('section_id')}", file=sys.stderr)
             if 'section_id' in q and q['section_id'] is not None:
                 try:
                     q['section_id'] = int(q['section_id'])
-                except Exception as exc:
-                    print(f"[FormSerializer.create] Failed to cast section_id: {exc}", file=sys.stderr)
+                except Exception:
                     q['section_id'] = None
-            print(f"[FormSerializer.create] Post section_id: {q.get('section_id')}", file=sys.stderr)
-        # Store sections as JSON in form.description for round-trip (optional, not for querying)
-        try:
-            form = Form.objects.create(**validated_data)
-            print(f"[FormSerializer.create] Created form: {form}", file=sys.stderr)
-            # Save sections to the model's sections field
-            form.sections = sections_data if sections_data else []
-            form.save()
-        except Exception as e:
-            print(f"[FormSerializer.create] ERROR creating form: {e}", file=sys.stderr)
-            raise
-        if sections_data:
-            import json as _json
-            form.description = (form.description or '') + f"\n__SECTIONS__:{_json.dumps(sections_data)}"
-            form.save()
-            print(f"[FormSerializer.create] Saved sections to description", file=sys.stderr)
+        # Only store the plain description from validated_data
+        form = Form.objects.create(**validated_data)
+        # Save sections to the model's sections field (not description)
+        form.sections = sections_data if sections_data else []
+        form.save()
         # Create questions
         question_map = {}
         for q_data in questions_data:
             options_data = q_data.pop('options', [])
             q_id = q_data.get('id', None)
-            print(f"[FormSerializer.create] Creating question with data: {q_data}", file=sys.stderr)
-            try:
-                question = Question.objects.create(form=form, **q_data)
-            except Exception as qe:
-                print(f"[FormSerializer.create] ERROR creating question: {qe} | data: {q_data}", file=sys.stderr)
-                raise
+            question = Question.objects.create(form=form, **q_data)
             if q_id is not None:
                 question_map[q_id] = question
             else:
@@ -114,18 +98,13 @@ class FormSerializer(serializers.ModelSerializer):
         for question in question_map.values():
             for o_data in getattr(question, '_options_data', []):
                 triggers_q = o_data.pop('triggers_question', None)
-                try:
-                    option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
-                except Exception as oe:
-                    print(f"[FormSerializer.create] ERROR creating option: {oe} | data: {o_data}", file=sys.stderr)
-                    raise
+                option = Option.objects.create(question=question, text=o_data.get('text', ''), **{k: v for k, v in o_data.items() if k not in ('id', 'text')})
                 if triggers_q is not None:
                     triggers_instance = question_map.get(triggers_q) or Question.objects.filter(pk=triggers_q, form=form).first()
                     option.triggers_question = triggers_instance if triggers_instance else None
                 else:
                     option.triggers_question = None
                 option.save()
-        print(f"[FormSerializer.create] Form creation complete", file=sys.stderr)
         return form
 
     def update(self, instance, validated_data):

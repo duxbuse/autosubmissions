@@ -24,15 +24,8 @@ export function useForm() {
       const res = await axios.get(`${API_BASE}/api/forms/${formId}/`);
       let sections = res.data.sections;
       if (!sections || !Array.isArray(sections) || sections.length === 0) {
-        if (res.data.description && res.data.description.includes('__SECTIONS__:')) {
-          try {
-            const match = res.data.description.match(/__SECTIONS__:({.*}|\[.*\])/);
-            if (match) {
-              sections = JSON.parse(match[1]);
-            }
-          } catch (err) {
-            // ignore
-          }
+        if (res.data.description) {
+          sections = res.data.description
         }
       }
       form.value = { ...res.data, sections };
