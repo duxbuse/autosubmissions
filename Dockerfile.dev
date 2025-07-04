@@ -1,0 +1,35 @@
+
+# Development Dockerfile for Django + Vue.js with hot reloading
+FROM node:24-slim
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Backend deps
+WORKDIR /app/backend
+COPY backend/.python-version ./
+RUN uv python install
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync
+
+
+# Frontend deps
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install --include=dev
+
+WORKDIR /app
+
+# Expose ports for Django and Vite
+EXPOSE 8000 5173
+
+# Entrypoint script for dev: runs both servers with hot reload
+COPY ./dev-entrypoint.sh /app/dev-entrypoint.sh
+RUN chmod +x /app/dev-entrypoint.sh
+
+CMD ["/app/dev-entrypoint.sh"]
