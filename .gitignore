@@ -33,4 +33,4 @@ backend/form_json/
 backend/db.sqlite3
 backend/submission_json/
 
-backend/static/
+backend/form_generator/static
