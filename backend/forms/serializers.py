@@ -55,7 +55,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         triggers = validated_data.pop('triggers_question', [])
         options_data = validated_data.pop('options', []) if 'options' in validated_data else []
         question = Question.objects.create(**validated_data)
-        if triggers:
+        if triggers is not None:
             question.triggers_question.set(triggers)
         # Optionally handle options creation here if needed
         return question
@@ -184,7 +184,10 @@ class FormSerializer(serializers.ModelSerializer):
             if q_id:
                 question = Question.objects.get(id=q_id, form=instance)
                 for attr, value in q_data.items():
-                    setattr(question, attr, value)
+                    if attr == 'triggers_question':
+                        question.triggers_question.set(value)
+                    else:
+                        setattr(question, attr, value)
                 question.save()
             else:
                 question = Question.objects.create(form=instance, **q_data)

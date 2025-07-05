@@ -26,7 +26,8 @@
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 1
+      "section_id": 1,
+      "triggers_question": []
     },
     {
       "id": 2,
@@ -37,7 +38,8 @@
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 1
+      "section_id": 1,
+      "triggers_question": []
     },
     {
       "id": 3,
@@ -48,7 +50,8 @@
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 1
+      "section_id": 1,
+      "triggers_question": []
     },
     {
       "id": 4,
@@ -59,7 +62,8 @@
       "hidden": true,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 2
+      "section_id": 2,
+      "triggers_question": []
     },
     {
       "id": 5,
@@ -70,7 +74,8 @@
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 2
+      "section_id": 2,
+      "triggers_question": []
     },
     {
       "id": 6,
@@ -81,7 +86,10 @@
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 2
+      "section_id": 2,
+      "triggers_question": [
+        7
+      ]
     },
     {
       "id": 7,
@@ -92,7 +100,8 @@
       "hidden": true,
       "any_option_triggers_question": null,
       "options": [],
-      "section_id": 2
+      "section_id": 2,
+      "triggers_question": []
     }
   ]
 }
