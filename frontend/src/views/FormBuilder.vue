@@ -22,7 +22,8 @@
     <div v-else>
       <FormMeta :form="form" :validationErrors="validationErrors" @update:form="updateFormMeta" />
 
-      <h2>Sections <button @click="addSection">+ Add Section</button></h2>
+
+      <h2>Sections</h2>
 
       <div class="sections-list">
         <SectionEditor
@@ -34,6 +35,9 @@
           @rename="renameSection(sIdx, $event)"
           @dblclick.native="renameSection(sIdx, $event)"
         >
+          <template #header-extra>
+            <button @click.stop="removeSection(sIdx)" style="position:absolute;top:0.5em;right:0.75em;background:none;border:none;font-size:1.2em;line-height:1;color:#c00;cursor:pointer;">Delete ×</button>
+          </template>
           <div class="questions-in-section">
             <QuestionEditor
               v-for="(question, qIdx) in questions.filter(q => q.section_id === section.id)"
@@ -50,6 +54,9 @@
             <button @click="addQuestion(section.id)" style="margin-top: 0.5em;">Add Question to {{ section.name }}</button>
           </div>
         </SectionEditor>
+        <div style="margin-top:1em;text-align:center;">
+          <button @click="addSection">+ Add Section</button>
+        </div>
       </div>
 
       <div class="actions">

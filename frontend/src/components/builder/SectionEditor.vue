@@ -1,20 +1,22 @@
-
 <template>
   <div class="section-block">
     <div
       class="section-header"
-      :style="{ cursor: 'pointer', background: '#f7f7f7', borderRadius: '8px', padding: '0.75em 1em', marginBottom: '0.5em', fontWeight: 'bold', fontSize: '1.1em', border: '1px solid #ddd', boxShadow: '0 1px 4px #0001' }"
       :aria-expanded="isOpen"
       @click="onHeaderClick"
       @dblclick="onHeaderDblClick"
     >
-      <span v-if="!editing" style="user-select: none;">{{ section.name }}</span>
-      <input v-else type="text" v-model="editName" @blur="finishEditing" @keyup.enter="finishEditing" @keyup.esc="cancelEditing" style="font-size:1em; font-weight:bold; width: 60%;" />
-      <span v-if="isOpen" style="float:right;">▼</span>
-      <span v-else style="float:right;">▶</span>
+      <div class="section-title">
+        <span v-if="!editing">{{ section.name }}</span>
+        <input v-else type="text" v-model="editName" @blur="finishEditing" @keyup.enter="finishEditing" @keyup.esc="cancelEditing" />
+      </div>
+      <div class="header-controls">
+        <slot name="header-extra"></slot>
+        <span class="accordion-arrow">{{ isOpen ? '▼' : '▶' }}</span>
+      </div>
     </div>
     <transition name="fade">
-      <div v-show="isOpen" class="section-body" style="padding: 1em 1.5em 1.5em 1.5em; background: #fff; border-radius: 0 0 8px 8px; border: 1px solid #eee; border-top: none;">
+      <div v-show="isOpen" class="section-body">
         <slot></slot>
       </div>
     </transition>
@@ -72,10 +74,74 @@ const cancelEditing = () => {
 </script>
 
 <style scoped>
+.section-block {
+  margin-bottom: 1em;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  cursor: pointer;
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  font-weight: bold;
+  font-size: 1.1em;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 4px #0001;
+}
+
+.section-title {
+  flex-grow: 1;
+  user-select: none;
+}
+
+.section-title input {
+  font-size: 1em;
+  font-weight: bold;
+  width: 95%;
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5em; /* More space between arrow and button */
+}
+
+.accordion-arrow {
+  font-size: 1em; /* Adjusted size */
+  cursor: pointer;
+}
+
+.section-body {
+  padding: 1em 1.5em 1.5em 1.5em;
+  background: #fff;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid #eee;
+  border-top: none;
+  margin-top: -0.5em; /* Pulls body up to header */
+}
+
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.5s;
 }
 .fade-enter, .fade-leave-to {
   opacity: 0;
+}
+
+/*
+  Reset button styles from the slot.
+  Using :deep() to pierce component scope.
+*/
+.header-controls :deep(button) {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  margin: 0; /* Reset margins */
 }
 </style>

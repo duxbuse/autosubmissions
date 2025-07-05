@@ -4,8 +4,14 @@ import { ref, watch, nextTick } from 'vue';
 export function useFormSections(sections, questions, sectionIdCounter) {
   const activeSectionIdx = ref(0);
 
+  // Ensure unique section IDs by always incrementing from the max existing ID
   const addSection = () => {
-    sections.value.push({ id: sectionIdCounter++, name: `Section ${sections.value.length + 1}` });
+    let maxId = 0;
+    if (sections.value.length > 0) {
+      maxId = Math.max(...sections.value.map(s => typeof s.id === 'number' ? s.id : 0));
+    }
+    const newId = maxId + 1;
+    sections.value.push({ id: newId, name: `Section ${sections.value.length + 1}` });
   };
 
   const removeSection = (idx) => {
