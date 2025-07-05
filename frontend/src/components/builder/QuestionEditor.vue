@@ -53,6 +53,13 @@
       <button @click="addOption">Add Option</button>
     </div>
     <div style="margin-top: 0.5em;">
+      <label>Triggers Questions:
+        <select multiple :value="question.triggers_question || []" @change="onTriggersChange($event)" style="min-width: 200px;">
+          <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
+        </select>
+      </label>
+    </div>
+    <div style="margin-top: 0.5em;">
       <label>Section:
         <select :value="question.section_id" @change="updateQuestion('section_id', $event.target.value)">
           <option v-for="sec in sections" :key="sec.id" :value="sec.id">{{ sec.name }}</option>

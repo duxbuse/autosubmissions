@@ -39,12 +39,36 @@ class SectionSerializer(serializers.Serializer):
 class QuestionSerializer(serializers.ModelSerializer):
     options = OptionSerializer(many=True, required=False)
     section_id = serializers.IntegerField(required=False, allow_null=True)
+    triggers_question = serializers.PrimaryKeyRelatedField(
+        queryset=Question.objects.all(),
+        many=True,
+        required=False
+    )
     class Meta:
         model = Question
         fields = [
             'id', 'text', 'question_type', 'order', 'output_template', 'hidden',
-            'any_option_triggers_question', 'options', 'section_id'
+            'any_option_triggers_question', 'options', 'section_id', 'triggers_question'
         ]
+
+    def create(self, validated_data):
+        triggers = validated_data.pop('triggers_question', [])
+        options_data = validated_data.pop('options', []) if 'options' in validated_data else []
+        question = Question.objects.create(**validated_data)
+        if triggers:
+            question.triggers_question.set(triggers)
+        # Optionally handle options creation here if needed
+        return question
+
+    def update(self, instance, validated_data):
+        triggers = validated_data.pop('triggers_question', None)
+        options_data = validated_data.pop('options', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if triggers is not None:
+            instance.triggers_question.set(triggers)
+        return instance
 
 class FormSerializer(serializers.ModelSerializer):
     sections = SectionSerializer(many=True, required=False)

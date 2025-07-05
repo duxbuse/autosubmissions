@@ -46,6 +46,14 @@ class Question(models.Model):
     )
     # --- Section support ---
     section_id = models.IntegerField(null=True, blank=True, help_text="Section ID this question belongs to (from form.sections array, not a FK)")
+    # Allow any question to trigger other questions (not just options)
+    triggers_question = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        related_name='triggered_by_question',
+        blank=True,
+        help_text="If this question is answered, these questions will be shown."
+    )
 
     class Meta:
         ordering = ['order']

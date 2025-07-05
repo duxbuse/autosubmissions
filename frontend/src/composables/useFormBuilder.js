@@ -262,6 +262,11 @@ function validateFormAndScroll() {
     Object.assign(form, newForm);
   }
 
+const onTriggersChange = (e) => {
+  const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
+  updateQuestion('triggers_question', selected);
+};
+
   return {
     mode,
     formId,
@@ -279,6 +284,7 @@ function validateFormAndScroll() {
     saveForm,
     cancelEdit,
     sectionIdCounter,
-    updateFormMeta
+    updateFormMeta,
+    onTriggersChange
   };
 }

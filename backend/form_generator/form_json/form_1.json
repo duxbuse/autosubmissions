@@ -1,15 +1,19 @@
 {
   "id": 1,
-  "name": "Bail App",
-  "description": "Seans bail app",
+  "name": "Plea of guity",
+  "description": "Create submissions for a plea of guilty",
   "sections": [
     {
       "id": 1,
-      "name": "General"
+      "name": "Client Details"
     },
     {
       "id": 2,
-      "name": "Section 2"
+      "name": "Criminal History"
+    },
+    {
+      "id": 2,
+      "name": "Childhood"
     }
   ],
   "questions": [
@@ -18,7 +22,7 @@
       "text": "Date of birth",
       "question_type": "DATE",
       "order": 1,
-      "output_template": "",
+      "output_template": "Date of birth is {{answer}}",
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
@@ -29,11 +33,66 @@
       "text": "Address",
       "question_type": "TEXT",
       "order": 2,
-      "output_template": "",
+      "output_template": "Clients address is {{answer}}",
       "hidden": false,
       "any_option_triggers_question": null,
       "options": [],
       "section_id": 1
+    },
+    {
+      "id": 3,
+      "text": "Centrelink registration Number",
+      "question_type": "TEXT",
+      "order": 3,
+      "output_template": "CRN: {{answer}}",
+      "hidden": false,
+      "any_option_triggers_question": null,
+      "options": [],
+      "section_id": 1
+    },
+    {
+      "id": 4,
+      "text": "Did they have both parents growing up",
+      "question_type": "TEXT",
+      "order": 4,
+      "output_template": "{{answer}}",
+      "hidden": true,
+      "any_option_triggers_question": null,
+      "options": [],
+      "section_id": 2
+    },
+    {
+      "id": 5,
+      "text": "How many siblings do they have",
+      "question_type": "TEXT",
+      "order": 5,
+      "output_template": "The client has {{answer}} siblings",
+      "hidden": false,
+      "any_option_triggers_question": null,
+      "options": [],
+      "section_id": 2
+    },
+    {
+      "id": 6,
+      "text": "Was there any abuse during their childhood",
+      "question_type": "TEXT",
+      "order": 6,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "any_option_triggers_question": null,
+      "options": [],
+      "section_id": 2
+    },
+    {
+      "id": 7,
+      "text": "Was Child protections involved during their childhood",
+      "question_type": "TEXT",
+      "order": 7,
+      "output_template": "{{answer}}",
+      "hidden": true,
+      "any_option_triggers_question": null,
+      "options": [],
+      "section_id": 2
     }
   ]
 }
