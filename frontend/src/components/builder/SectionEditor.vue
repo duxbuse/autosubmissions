@@ -5,8 +5,10 @@
       class="section-header"
       :style="{ cursor: 'pointer', background: '#f7f7f7', borderRadius: '8px', padding: '0.75em 1em', marginBottom: '0.5em', fontWeight: 'bold', fontSize: '1.1em', border: '1px solid #ddd', boxShadow: '0 1px 4px #0001' }"
       :aria-expanded="isOpen"
+      @click="onHeaderClick"
+      @dblclick="onHeaderDblClick"
     >
-      <span v-if="!editing" @click="$emit('toggle')" @dblclick="startEditing" style="user-select: none;">{{ section.name }}</span>
+      <span v-if="!editing" style="user-select: none;">{{ section.name }}</span>
       <input v-else type="text" v-model="editName" @blur="finishEditing" @keyup.enter="finishEditing" @keyup.esc="cancelEditing" style="font-size:1em; font-weight:bold; width: 60%;" />
       <span v-if="isOpen" style="float:right;">▼</span>
       <span v-else style="float:right;">▶</span>
@@ -30,6 +32,27 @@ const editName = ref(props.section.name);
 watch(() => props.section.name, (val) => {
   if (!editing.value) editName.value = val;
 });
+// Handle click and double click on the whole header
+let clickTimeout = null;
+const onHeaderClick = (e) => {
+  // Prevent click if editing
+  if (editing.value) return;
+  // Delay to distinguish single from double click
+  if (clickTimeout) clearTimeout(clickTimeout);
+  clickTimeout = setTimeout(() => {
+    emit('toggle');
+    clickTimeout = null;
+  }, 200);
+};
+
+const onHeaderDblClick = (e) => {
+  // Prevent double click if already editing
+  if (editing.value) return;
+  if (clickTimeout) clearTimeout(clickTimeout);
+  editing.value = true;
+  editName.value = props.section.name;
+  // Optionally, focus input after next tick
+};
 
 const startEditing = (e) => {
   editing.value = true;
