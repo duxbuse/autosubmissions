@@ -53,11 +53,16 @@
       <button @click="addOption">Add Option</button>
     </div>
     <div style="margin-top: 0.5em;">
-      <label>Triggers Questions:
-        <select multiple :value="question.triggers_question || []" @change="onTriggersChange($event)" style="min-width: 200px;">
-          <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
-        </select>
+      <label>
+        <input type="checkbox" v-model="showTriggers" /> Enable triggers for this question
       </label>
+      <div v-if="showTriggers" style="margin-top: 0.5em;">
+        <label>Triggers Questions:
+          <select multiple :value="question.triggers_question || []" @change="onTriggersChange($event)" style="min-width: 200px;">
+            <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
+          </select>
+        </label>
+      </div>
     </div>
     <div style="margin-top: 0.5em;">
       <label>Section:
@@ -99,4 +104,16 @@ const updateOption = (oIdx, option) => {
   updateQuestion('options', options);
 };
 
+
+import { ref, watch } from 'vue';
+
+const showTriggers = ref(Array.isArray(props.question.triggers_question) && props.question.triggers_question.length > 0);
+watch(() => props.question.triggers_question, (val) => {
+  showTriggers.value = Array.isArray(val) && val.length > 0;
+});
+
+const onTriggersChange = (e) => {
+  const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
+  updateQuestion('triggers_question', selected);
+};
 </script>
