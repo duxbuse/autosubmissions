@@ -30,8 +30,9 @@
           :key="section.id"
           :section="section"
           :isOpen="activeSectionIdx === sIdx"
-          @toggle="openSection(sIdx)"
+          @toggle="() => openSection(sIdx)"
           @rename="renameSection(sIdx, $event)"
+          @dblclick.native="renameSection(sIdx, $event)"
         >
           <div class="questions-in-section">
             <QuestionEditor

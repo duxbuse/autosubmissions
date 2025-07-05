@@ -25,6 +25,7 @@ class Question(models.Model):
         MULTIPLE_CHOICE = 'MC', 'Multiple Choice'
         CHECKBOXES = 'CHECK', 'Checkboxes'
         DROPDOWN = 'DROP', 'Dropdown'
+        DATE = 'DATE', 'Date'
 
     form = models.ForeignKey(Form, related_name='questions', on_delete=models.CASCADE)
     text = models.CharField(max_length=1024)
