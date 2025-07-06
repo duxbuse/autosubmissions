@@ -50,11 +50,17 @@
         <input type="checkbox" v-model="showTriggers" /> Enable triggers for this question
       </label>
       <div v-if="showTriggers" style="margin-top: 0.5em;">
-        <label>Triggers Questions:
-          <select multiple :value="question.triggers_question || []" @change="onTriggersChange($event)" style="min-width: 200px;">
-            <option v-for="q in questions" :key="q.id || q.order" :value="q.id">{{ q.text }}</option>
-          </select>
-        </label>
+        <label>Triggers Questions:</label>
+        <div class="checkbox-group">
+          <label v-for="q in questions.filter(q => q.id !== question.id)" :key="q.id || q.order">
+            <input
+              type="checkbox"
+              :checked="question.triggers_question && question.triggers_question.includes(q.id)"
+              @change="toggleTriggerQuestion(q.id)"
+            />
+            {{ q.text || 'Untitled Question' }}
+          </label>
+        </div>
       </div>
     </div>
     <div style="margin-top: 0.5em;">
@@ -107,8 +113,31 @@ watch(showTriggers, (newValue) => {
   }
 });
 
-const onTriggersChange = (e) => {
-  const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
-  updateQuestion('triggers_question', selected);
+const toggleTriggerQuestion = (questionId) => {
+  const currentTriggers = props.question.triggers_question || [];
+  const newTriggers = [...currentTriggers];
+  const index = newTriggers.indexOf(questionId);
+  if (index > -1) {
+    newTriggers.splice(index, 1);
+  } else {
+    newTriggers.push(questionId);
+  }
+  updateQuestion('triggers_question', newTriggers);
 };
 </script>
+
+<style scoped>
+.checkbox-group {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 0.5em;
+  border-radius: 4px;
+}
+.checkbox-group label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

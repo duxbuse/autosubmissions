@@ -33,7 +33,6 @@
           :isOpen="activeSectionIdx === sIdx"
           @toggle="() => openSection(sIdx)"
           @rename="renameSection(sIdx, $event)"
-          @dblclick.native="renameSection(sIdx, $event)"
         >
           <template #header-extra>
             <button @click.stop="removeSection(sIdx)" style="position:absolute;top:0.5em;right:0.75em;background:none;border:none;font-size:1.2em;line-height:1;color:#c00;cursor:pointer;">Delete ×</button>

@@ -18,6 +18,10 @@
     {
       "id": 4,
       "name": "Education"
+    },
+    {
+      "id": 5,
+      "name": "Employment"
     }
   ],
   "questions": [
@@ -54,6 +58,194 @@
       "hidden": true,
       "options": [],
       "section_id": 4,
+      "triggers_question": []
+    },
+    {
+      "id": 18,
+      "text": "Date of Birth",
+      "question_type": "DATE",
+      "order": 3,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 1,
+      "triggers_question": []
+    },
+    {
+      "id": 19,
+      "text": "Address",
+      "question_type": "TEXT",
+      "order": 4,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 1,
+      "triggers_question": []
+    },
+    {
+      "id": 20,
+      "text": "CRN",
+      "question_type": "TEXT",
+      "order": 5,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 1,
+      "triggers_question": []
+    },
+    {
+      "id": 21,
+      "text": "Prior convictions",
+      "question_type": "TEXT",
+      "order": 6,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 2,
+      "triggers_question": [
+        22
+      ]
+    },
+    {
+      "id": 22,
+      "text": "Current Court orders  / CCO",
+      "question_type": "TEXT",
+      "order": 7,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 2,
+      "triggers_question": []
+    },
+    {
+      "id": 23,
+      "text": "Both parents growing up?",
+      "question_type": "TEXT",
+      "order": 8,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 24,
+      "text": "Siblings",
+      "question_type": "TEXT",
+      "order": 9,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 25,
+      "text": "Any abuse?",
+      "question_type": "TEXT",
+      "order": 10,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": [
+        26
+      ]
+    },
+    {
+      "id": 26,
+      "text": "Was CPS involved?",
+      "question_type": "TEXT",
+      "order": 11,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 27,
+      "text": "Currently Employed?",
+      "question_type": "DROP",
+      "order": 12,
+      "output_template": "",
+      "hidden": false,
+      "options": [
+        {
+          "id": 6,
+          "text": "yes",
+          "triggers_question": [
+            28
+          ]
+        },
+        {
+          "id": 7,
+          "text": "no",
+          "triggers_question": [
+            29,
+            32
+          ]
+        }
+      ],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 28,
+      "text": "Employment details",
+      "question_type": "TEXT",
+      "order": 13,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 29,
+      "text": "Last role details",
+      "question_type": "TEXT",
+      "order": 14,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": [
+        30,
+        31
+      ]
+    },
+    {
+      "id": 30,
+      "text": "Last role end date",
+      "question_type": "DATE",
+      "order": 15,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 31,
+      "text": "Why did you leave?",
+      "question_type": "TEXT",
+      "order": 16,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 32,
+      "text": "Receive Centrelink (which benefit and how much)",
+      "question_type": "TEXT",
+      "order": 17,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
       "triggers_question": []
     }
   ]

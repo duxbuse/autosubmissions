@@ -22,6 +22,7 @@ export function useFormSections(sections, questions, sectionIdCounter) {
 
   const renameSection = (idx, newName) => {
     sections.value[idx].name = newName;
+    activeSectionIdx.value = idx;
   };
 
   const openSection = (idx) => {
