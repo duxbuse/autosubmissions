@@ -14,5 +14,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "django-stubs>=5.2.1",
     "podman-compose>=1.4.0",
 ]

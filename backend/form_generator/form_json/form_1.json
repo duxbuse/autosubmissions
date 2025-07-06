@@ -14,108 +14,46 @@
     {
       "id": 3,
       "name": "Childhood"
+    },
+    {
+      "id": 4,
+      "name": "Education"
     }
   ],
   "questions": [
     {
-      "id": 1,
-      "text": "Date of birth",
-      "question_type": "DATE",
+      "id": 16,
+      "text": "highest level",
+      "question_type": "DROP",
       "order": 1,
-      "output_template": "Date of birth is {{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 2,
-      "text": "Address",
-      "question_type": "TEXT",
-      "order": 2,
-      "output_template": "Clients address is {{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 3,
-      "text": "Centrelink registration Number",
-      "question_type": "TEXT",
-      "order": 3,
-      "output_template": "CRN: {{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 8,
-      "text": "Have you any criminal history",
-      "question_type": "TEXT",
-      "order": 4,
-      "output_template": "{{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 2,
-      "triggers_question": []
-    },
-    {
-      "id": 9,
-      "text": "Are there any active correction orders or CCO",
-      "question_type": "TEXT",
-      "order": 5,
-      "output_template": "{{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 2,
-      "triggers_question": []
-    },
-    {
-      "id": 10,
-      "text": "Did you have both parents growing up",
-      "question_type": "TEXT",
-      "order": 6,
-      "output_template": "{{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": []
-    },
-    {
-      "id": 11,
-      "text": "How many siblings do you have",
-      "question_type": "TEXT",
-      "order": 7,
-      "output_template": "{{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": []
-    },
-    {
-      "id": 14,
-      "text": "any abuse",
-      "question_type": "TEXT",
-      "order": 8,
       "output_template": "",
       "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": [
-        15
-      ]
+      "options": [
+        {
+          "id": 4,
+          "text": "yr12",
+          "triggers_question": []
+        },
+        {
+          "id": 5,
+          "text": "teritiary",
+          "triggers_question": [
+            17
+          ]
+        }
+      ],
+      "section_id": 4,
+      "triggers_question": []
     },
     {
-      "id": 15,
-      "text": "was cps involved",
+      "id": 17,
+      "text": "what tertiary",
       "question_type": "TEXT",
-      "order": 9,
+      "order": 2,
       "output_template": "",
       "hidden": true,
       "options": [],
-      "section_id": 3,
+      "section_id": 4,
       "triggers_question": []
     }
   ]
