@@ -167,7 +167,6 @@ function validateFormAndScroll() {
         questions: questions.value.map((q, qIdx) => ({
           ...q,
           hidden: !!q.hidden,
-          any_option_triggers_question: q.any_option_triggers_question || null,
           section_id: q.section_id,
           options: q.options.map(o => ({
             text: o.text,
@@ -207,7 +206,6 @@ function validateFormAndScroll() {
         return {
           ...q,
           hidden: q.hidden || false,
-          any_option_triggers_question: q.any_option_triggers_question || null,
           section_id: sectionId,
           options: q.options ? q.options.map(o => ({
             ...o,
@@ -219,7 +217,6 @@ function validateFormAndScroll() {
       questions.value = (backendQuestions).map(q => ({
         ...q,
         hidden: q.hidden || false,
-        any_option_triggers_question: q.any_option_triggers_question || null,
         section_id: q.section_id != null ? Number(q.section_id) : null,
         options: q.options ? q.options.map(o => ({
           ...o,

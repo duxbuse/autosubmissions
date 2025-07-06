@@ -17,13 +17,14 @@
               :isOpen="activeSectionIdx === sIdx"
               @toggle="openSection(sIdx)"
             >
-              <Question
-                v-for="(question, qIdx) in sectionQuestions(section.id)"
-                :key="question.id || qIdx"
-                :question="question"
-                v-model="answers[question.id]"
-                :isTriggered="isTriggeredByAnswers(question)"
-              />
+              <template v-for="(question, qIdx) in sectionQuestions(section.id)" :key="question.id || qIdx">
+                <Question
+                  v-if="visibleQuestions.has(question.id)"
+                  :question="question"
+                  v-model="answers[question.id]"
+                  
+                />
+              </template>
             </FormSection>
           </div>
           <button type="submit" :disabled="!canSubmit">Submit</button>
@@ -49,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useForm } from '@/composables/useForm';
 import { useSubmissions } from '@/composables/useSubmissions';
@@ -93,13 +94,6 @@ const activeSectionIdx = ref(0);
 
 function openSection(idx) {
   if (idx === activeSectionIdx.value) return;
-  if (idx > activeSectionIdx.value) {
-    const currentSection = form.value.sections[activeSectionIdx.value];
-    if (!isSectionComplete(currentSection)) {
-      alert('Please complete all questions in this section before proceeding.');
-      return;
-    }
-  }
   activeSectionIdx.value = idx;
 }
 
@@ -120,31 +114,86 @@ function isSectionComplete(section) {
   return true;
 }
 
-function isTriggeredByAnswers(question) {
-  const idx = questions.value.findIndex(q => q.id === question.id);
-  for (let j = 0; j < idx; ++j) {
-    const prevQ = questions.value[j];
-    if (prevQ.options && prevQ.options.length) {
-      for (const opt of prevQ.options) {
-        let triggers = opt.triggers_question;
-        if (!Array.isArray(triggers)) triggers = triggers != null ? [triggers] : [];
-        if (triggers.includes(question.id)) {
-          if ((prevQ.question_type === 'MC' || prevQ.question_type === 'DROP') && answers[prevQ.id] === opt.text) {
-            return true;
+const visibleQuestions = computed(() => {
+  console.log('--- Recomputing visible questions ---');
+  console.log('Current answers:', JSON.parse(JSON.stringify(answers)));
+
+  if (!questions.value) {
+    console.log('No questions loaded, returning empty set.');
+    return new Set();
+  }
+
+  const allTriggeredIds = new Set();
+  questions.value.forEach(q => {
+    (q.triggers_question || []).forEach(id => allTriggeredIds.add(id));
+    (q.options || []).forEach(opt => {
+      (opt.triggers_question || []).forEach(id => allTriggeredIds.add(id));
+    });
+  });
+  console.log('All question IDs that can be triggered:', allTriggeredIds);
+
+  const visible = new Set();
+  questions.value.forEach(q => {
+    const isTriggerTarget = allTriggeredIds.has(q.id);
+
+    if (!isTriggerTarget) {
+      if (!q.hidden) {
+        visible.add(q.id);
+      }
+      return;
+    }
+
+    console.log(`Checking if target question ${q.id} ("${q.text}") should be visible...`);
+    const isMadeVisible = questions.value.some(triggering_q => {
+      const answer = answers[triggering_q.id];
+      
+      if (answer === undefined || answer === null || answer === '' || (Array.isArray(answer) && answer.length === 0)) {
+        return false;
+      }
+
+      // Check direct question-to-question trigger
+      if ((triggering_q.triggers_question || []).includes(q.id)) {
+        console.log(`  ✔️ Question ${q.id} IS triggered by non-empty answer in question ${triggering_q.id} ("${triggering_q.text}")`);
+        return true;
+      }
+
+      // Check option-based trigger
+      if (triggering_q.options) {
+        const answerMatchesOption = (triggering_q.options || []).some(opt => {
+          if (!(opt.triggers_question || []).includes(q.id)) {
+            return false;
           }
-          if (prevQ.question_type === 'CHECK') {
-            const arr = Array.isArray(answers[prevQ.id]) ? answers[prevQ.id] : [];
-            if (arr.includes(opt.text)) {
-              return true;
-            }
+          
+          let isMatch = false;
+          if (Array.isArray(answer)) {
+            isMatch = answer.includes(opt.text);
+          } else {
+            isMatch = answer === opt.text;
           }
+
+          if (isMatch) {
+            console.log(`  ✔️ Question ${q.id} IS triggered by option '${opt.text}' in question ${triggering_q.id} ("${triggering_q.text}")`);
+          }
+          return isMatch;
+        });
+
+        if (answerMatchesOption) {
+          return true;
         }
       }
+
+      return false;
+    });
+
+    if (isMadeVisible) {
+      console.log(`  -> Making question ${q.id} visible.`);
+      visible.add(q.id);
+    } else {
+      console.log(`  -> Keeping question ${q.id} hidden.`);
     }
-    if (prevQ.question_type === 'DROP' && prevQ.any_option_triggers_question == question.id && answers[prevQ.id]) {
-      return true;
-    }
-  }
-  return false;
-}
+  });
+
+  console.log('Final set of visible question IDs:', visible);
+  return visible;
+});
 </script>

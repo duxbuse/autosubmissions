@@ -36,14 +36,6 @@ class Question(models.Model):
         help_text="Sample submission text. Use {{answer}} to insert the user's answer."
     )
     hidden = models.BooleanField(default=False)
-    any_option_triggers_question = models.ForeignKey(
-        'self',
-        related_name='triggered_by_any_option',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        help_text="If any option is selected, this question will be shown (for dropdowns)."
-    )
     # --- Section support ---
     section_id = models.IntegerField(null=True, blank=True, help_text="Section ID this question belongs to (from form.sections array, not a FK)")
     # Allow any question to trigger other questions (not just options)

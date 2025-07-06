@@ -55,7 +55,7 @@
           </div>
         </SectionEditor>
         <div style="margin-top:1em;text-align:center;">
-          <button @click="addSection">+ Add Section</button>
+          <button @click="addSectionAndOpen">+ Add Section</button>
         </div>
       </div>
 
@@ -106,10 +106,20 @@ const {
   openSection,
 } = useFormSections(sections, questions, sectionIdCounter);
 
+const getNextQuestionId = () => {
+  if (questions.value.length === 0) {
+    return 1;
+  }
+  const maxId = Math.max(...questions.value.map(q => q.id || 0));
+  console.log('[FormBuilder.vue] getNextQuestionId called, maxId:', maxId + 1);
+  return maxId + 1;
+};
+
 const addQuestion = (sectionId = null) => {
   let secId = sectionId;
   if (!secId && sections.value.length > 0) secId = sections.value[0].id;
   questions.value.push({
+    id: getNextQuestionId(),
     text: '',
     question_type: 'TEXT', // default, but can be changed to 'DATE' in UI
     order: questions.value.length + 1,
@@ -145,6 +155,11 @@ const moveQuestion = (idx, dir) => {
   questions.value[idx] = questions.value[newIdx];
   questions.value[newIdx] = temp;
   questions.value.forEach((q, i) => (q.order = i + 1));
+};
+
+const addSectionAndOpen = () => {
+  addSection();
+  openSection(sections.value.length - 1);
 };
 
 

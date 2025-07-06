@@ -31,13 +31,6 @@
       <h4>Options</h4>
       <span v-if="validationError && validationError.options" class="error">{{ validationError.options }}</span>
       <div v-if="question.question_type === 'DROP'" class="option-block">
-        <label>
-          Triggers question for any selection:
-          <select :value="question.any_option_triggers_question" @change="updateQuestion('any_option_triggers_question', $event.target.value)">
-            <option :value="null">None</option>
-            <option v-for="q in questions" :key="q.id || q.order" :value="Number(q.id)">{{ q.text }}</option>
-          </select>
-        </label>
       </div>
       <OptionEditor
         v-for="(option, oIdx) in question.options"
@@ -77,7 +70,6 @@
 
 <script setup>
 import OptionEditor from './OptionEditor.vue';
-import InputDate from '@/components/form/input/InputDate.vue';
 
 const props = defineProps(['question', 'questions', 'sections', 'questionIndex', 'validationError']);
 const emit = defineEmits(['update:question', 'remove', 'move']);
@@ -108,8 +100,11 @@ const updateOption = (oIdx, option) => {
 import { ref, watch } from 'vue';
 
 const showTriggers = ref(Array.isArray(props.question.triggers_question) && props.question.triggers_question.length > 0);
-watch(() => props.question.triggers_question, (val) => {
-  showTriggers.value = Array.isArray(val) && val.length > 0;
+
+watch(showTriggers, (newValue) => {
+  if (!newValue) {
+    updateQuestion('triggers_question', []);
+  }
 });
 
 const onTriggersChange = (e) => {

@@ -12,16 +12,8 @@
       "name": "Criminal History"
     },
     {
-      "id": 2,
-      "name": "Childhood"
-    },
-    {
-      "id": 2,
-      "name": "Section 4"
-    },
-    {
       "id": 3,
-      "name": "Section 5"
+      "name": "Childhood"
     }
   ],
   "questions": [
@@ -32,7 +24,6 @@
       "order": 1,
       "output_template": "Date of birth is {{answer}}",
       "hidden": false,
-      "any_option_triggers_question": null,
       "options": [],
       "section_id": 1,
       "triggers_question": []
@@ -44,7 +35,6 @@
       "order": 2,
       "output_template": "Clients address is {{answer}}",
       "hidden": false,
-      "any_option_triggers_question": null,
       "options": [],
       "section_id": 1,
       "triggers_question": []
@@ -56,33 +46,76 @@
       "order": 3,
       "output_template": "CRN: {{answer}}",
       "hidden": false,
-      "any_option_triggers_question": null,
       "options": [],
       "section_id": 1,
       "triggers_question": []
     },
     {
-      "id": 4,
-      "text": "Do they have a criminal record",
+      "id": 8,
+      "text": "Have you any criminal history",
       "question_type": "TEXT",
       "order": 4,
       "output_template": "{{answer}}",
-      "hidden": true,
-      "any_option_triggers_question": null,
+      "hidden": false,
       "options": [],
       "section_id": 2,
       "triggers_question": []
     },
     {
-      "id": 5,
-      "text": "Are they currently on a court order or CCO",
+      "id": 9,
+      "text": "Are there any active correction orders or CCO",
       "question_type": "TEXT",
       "order": 5,
       "output_template": "{{answer}}",
       "hidden": false,
-      "any_option_triggers_question": null,
       "options": [],
       "section_id": 2,
+      "triggers_question": []
+    },
+    {
+      "id": 10,
+      "text": "Did you have both parents growing up",
+      "question_type": "TEXT",
+      "order": 6,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 11,
+      "text": "How many siblings do you have",
+      "question_type": "TEXT",
+      "order": 7,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 14,
+      "text": "any abuse",
+      "question_type": "TEXT",
+      "order": 8,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": [
+        15
+      ]
+    },
+    {
+      "id": 15,
+      "text": "was cps involved",
+      "question_type": "TEXT",
+      "order": 9,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 3,
       "triggers_question": []
     }
   ]

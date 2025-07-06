@@ -1,6 +1,6 @@
 
 <template>
-  <div v-if="!question.hidden || (question.hidden && isTriggered)" class="question-block">
+  <div class="question-block">
     <label :for="'q_' + question.id">{{ question.text }}</label>
     <component
       :is="inputComponent"
@@ -20,13 +20,14 @@ import InputCheck from './input/InputCheck.vue';
 import InputDrop from './input/InputDrop.vue';
 import InputDate from './input/InputDate.vue';
 
-const props = defineProps(['question', 'modelValue', 'isTriggered']);
+const props = defineProps(['question', 'modelValue']);
 const emit = defineEmits(['update:modelValue']);
 
 const answer = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 });
+
 
 
 const components = {
