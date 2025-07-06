@@ -125,6 +125,17 @@ function validateFormAndScroll() {
         });
       }
     }
+    if (q.hidden) {
+      const isTriggered = questions.value.some(innerQ =>
+        (innerQ.triggers_question && innerQ.triggers_question.includes(q.id)) ||
+        (innerQ.options && innerQ.options.some(o => o.triggers_question && o.triggers_question.includes(q.id)))
+      );
+      if (!isTriggered) {
+        qErr.hidden = 'This hidden question is not triggered by any other question.';
+        valid = false;
+        if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+      }
+    }
     validationErrors.questions[qIdx] = qErr;
   });
   // Scroll to first invalid question if any

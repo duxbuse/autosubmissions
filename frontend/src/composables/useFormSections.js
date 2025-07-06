@@ -10,9 +10,10 @@ export function useFormSections(sections, questions, sectionIdCounter) {
     if (sections.value.length > 0) {
       maxId = Math.max(...sections.value.map(s => typeof s.id === 'number' ? s.id : 0));
     }
-    const newId = maxId + 1;
-    sections.value.push({ id: newId, name: `Section ${sections.value.length + 1}` });
-  };
+   const newId = maxId + 1;
+   sections.value.push({ id: newId, name: `Section ${sections.value.length + 1}` });
+   activeSectionIdx.value = sections.value.length - 1;
+ };
 
   const removeSection = (idx) => {
     const secId = sections.value[idx].id;
@@ -29,15 +30,6 @@ export function useFormSections(sections, questions, sectionIdCounter) {
     activeSectionIdx.value = idx;
   };
 
-  watch(
-    () => sections.value.length,
-    (len) => {
-      if (len > 0) {
-        nextTick(() => { activeSectionIdx.value = 0; });
-      }
-    },
-    { immediate: true }
-  );
 
   return {
     activeSectionIdx,

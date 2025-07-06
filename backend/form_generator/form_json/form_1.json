@@ -22,6 +22,18 @@
     {
       "id": 5,
       "name": "Employment"
+    },
+    {
+      "id": 6,
+      "name": "Mental Health"
+    },
+    {
+      "id": 7,
+      "name": "Community Support"
+    },
+    {
+      "id": 8,
+      "name": "Family"
     }
   ],
   "questions": [
@@ -199,7 +211,9 @@
       "hidden": true,
       "options": [],
       "section_id": 5,
-      "triggers_question": []
+      "triggers_question": [
+        29
+      ]
     },
     {
       "id": 29,
@@ -246,6 +260,96 @@
       "hidden": true,
       "options": [],
       "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 33,
+      "text": "Diagnosis's",
+      "question_type": "TEXT",
+      "order": 18,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 6,
+      "triggers_question": [
+        34
+      ]
+    },
+    {
+      "id": 34,
+      "text": "Medications",
+      "question_type": "TEXT",
+      "order": 19,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 6,
+      "triggers_question": []
+    },
+    {
+      "id": 35,
+      "text": "GP",
+      "question_type": "TEXT",
+      "order": 20,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 36,
+      "text": "Church",
+      "question_type": "TEXT",
+      "order": 21,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 37,
+      "text": "Community Group",
+      "question_type": "TEXT",
+      "order": 22,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 38,
+      "text": "Parents",
+      "question_type": "TEXT",
+      "order": 23,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 39,
+      "text": "Siblings",
+      "question_type": "TEXT",
+      "order": 24,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 40,
+      "text": "Friends",
+      "question_type": "TEXT",
+      "order": 25,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
       "triggers_question": []
     }
   ]

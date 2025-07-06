@@ -14,6 +14,7 @@
       </label>
     </div>
     <span v-if="validationError && validationError.text" class="error">{{ validationError.text }}</span>
+    <span v-if="validationError && validationError.hidden" class="error">{{ validationError.hidden }}</span>
     <select :value="question.question_type" @change="updateQuestion('question_type', $event.target.value)">
       <option value="TEXT">Text</option>
       <option value="DATE">Date</option>
