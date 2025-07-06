@@ -5,9 +5,9 @@
     <label>
       Triggers questions:
       <select multiple :value="option.triggers_question" @change="updateOption('triggers_question', Array.from($event.target.selectedOptions).map(o => o.value))" style="min-width: 120px;">
-        <option v-for="(q, qIdx2) in questions"
-          v-if="qIdx2 !== questionIndex"
-          :key="q.id !== undefined ? q.id : 'new-' + qIdx2"
+        <option v-for="(q, qIdx) in questions"
+          v-if="qIdx !== questionIndex"
+          :key="q.id !== undefined ? q.id : 'new-' + qIdx"
           :value="q.id"
         >
           {{ q.text }}
