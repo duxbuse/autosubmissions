@@ -1,8 +1,8 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
-from .models import Form, Question, Option, Submission, Answer
+from .models import Form, Question, Submission, Answer
 from .serializers import FormSerializer, SubmissionSerializer
 import json
 from django.conf import settings
@@ -10,6 +10,8 @@ from pathlib import Path
 import logging
 from django.http import HttpResponse
 from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import re
 
 class FormViewSet(viewsets.ModelViewSet):
@@ -78,16 +80,18 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def generate_doc(self, request, pk=None):
         submission = get_object_or_404(Submission, pk=pk)
-        answers = {a.question.pk: a.value for a in submission.answers.all()}
+        answers = {a.question.pk: a.value for a in Answer.objects.filter(submission=submission)}
         questions = Question.objects.filter(form=submission.form).order_by('order')
+        form = submission.form
         doc = Document()
+
         # Add header with submission date and client name
         submission_date = submission.submission_date.strftime('%B %d, %Y') if submission.submission_date else ''
         client_name = submission.client_name or 'client'
+
         # Add header (client above date)
         header = doc.sections[0].header
-        from docx.shared import Pt
-        from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+
         # Client name first
         p_client = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         p_client.text = f"Client: {client_name}"
@@ -100,19 +104,38 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         p_date.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         run_date = p_date.runs[0] if p_date.runs else p_date.add_run()
         run_date.font.size = Pt(11)
-        # Add answered questions
-        for q in questions:
-            template = q.output_template or ''
-            answer = answers.get(q.pk, '')
-            # Only add template if answer is not blank/null
-            if answer is not None and str(answer).strip() != '':
-                text = template.replace('{{answer}}', str(answer))
-                if text.strip():
-                    doc.add_paragraph(text)
+
+        # Add "Personal circumstances" section
+        doc.add_heading('Personal Circumstances', level=1)
+
+        # Get form sections
+        sections = form.sections or []
+
+        # Initialize answer counter
+        answer_number = 1
+
+        # Iterate through sections
+        for section in sections:
+            # Add section heading
+            doc.add_heading(section['name'], level=2)
+
+            # Iterate through questions in this section
+            for q in questions.filter(section_id=section['id']):
+                template = q.output_template or ''
+                answer = answers.get(q.pk, '')
+
+                # Only add template if answer is not blank/null
+                if answer is not None and str(answer).strip() != '':
+                    text = f"{answer_number}. {template.replace('{{answer}}', str(answer))}"
+                    if text.strip():
+                        doc.add_paragraph(text)
+                        answer_number += 1
+
         from io import BytesIO
         f = BytesIO()
         doc.save(f)
         f.seek(0)
+
         # Sanitize client name for filename
         safe_client_name = re.sub(r'[^a-zA-Z0-9_-]', '_', client_name)
         date_str = submission.submission_date.strftime('%Y%m%d') if submission.submission_date else ''
