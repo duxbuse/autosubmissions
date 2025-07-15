@@ -9,10 +9,8 @@ from django.conf import settings
 from pathlib import Path
 import logging
 from django.http import HttpResponse
-from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import re
+from .doc_generator import DocGenerator
 
 class FormViewSet(viewsets.ModelViewSet):
     queryset = Form.objects.all()
@@ -79,70 +77,26 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def generate_doc(self, request, pk=None):
+        """Generate a document for the submission using the form's template type"""
         submission = get_object_or_404(Submission, pk=pk)
-        answers = {a.question.pk: a.value for a in Answer.objects.filter(submission=submission)}
-        questions = Question.objects.filter(form=submission.form).order_by('order')
-        form = submission.form
-        doc = Document()
+        
+        # Generate the document using the form's template type
+        doc_generator = DocGenerator(submission=submission)
+        doc_stream = doc_generator.generate()
 
-        # Add header with submission date and client name
-        submission_date = submission.submission_date.strftime('%B %d, %Y') if submission.submission_date else ''
-        client_name = submission.client_name or 'client'
-
-        # Add header (client above date)
-        header = doc.sections[0].header
-
-        # Client name first
-        p_client = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-        p_client.text = f"Client: {client_name}"
-        p_client.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        run_client = p_client.runs[0] if p_client.runs else p_client.add_run()
-        run_client.font.size = Pt(12)
-        # Date second
-        p_date = header.add_paragraph()
-        p_date.text = f"Submission Date: {submission_date}"
-        p_date.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        run_date = p_date.runs[0] if p_date.runs else p_date.add_run()
-        run_date.font.size = Pt(11)
-
-        # Add "Personal circumstances" section
-        doc.add_heading('Personal Circumstances', level=1)
-
-        # Get form sections
-        sections = form.sections or []
-
-        # Initialize answer counter
-        answer_number = 1
-
-        # Iterate through sections
-        for section in sections:
-            # Add section heading
-            doc.add_heading(section['name'], level=2)
-
-            # Iterate through questions in this section
-            for q in questions.filter(section_id=section['id']):
-                template = q.output_template or ''
-                answer = answers.get(q.pk, '')
-
-                # Only add template if answer is not blank/null
-                if answer is not None and str(answer).strip() != '':
-                    text = f"{answer_number}. {template.replace('{{answer}}', str(answer))}"
-                    if text.strip():
-                        doc.add_paragraph(text)
-                        answer_number += 1
-
-        from io import BytesIO
-        f = BytesIO()
-        doc.save(f)
-        f.seek(0)
-
-        # Sanitize client name for filename
-        safe_client_name = re.sub(r'[^a-zA-Z0-9_-]', '_', client_name)
+        # Create filename from submission details
+        safe_client_name = re.sub(r'[^a-zA-Z0-9_-]', '_', submission.client_name or 'client')
         date_str = submission.submission_date.strftime('%Y%m%d') if submission.submission_date else ''
         filename = f"submission_{safe_client_name}_{date_str}_{submission.pk}.docx"
-        response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
+        # Create response with the document
+        response = HttpResponse(
+            doc_stream.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        
         return response
 
     def create(self, request, *args, **kwargs):

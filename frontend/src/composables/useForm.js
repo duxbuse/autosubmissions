@@ -15,8 +15,20 @@ export function useForm() {
   const submitSuccess = ref(false);
   const submitError = ref(false);
   const submissionId = ref(null);
-  const clientName = ref('');
+  const clientHonorific = ref('');
+  const clientFirstName = ref('');
+  const clientSurname = ref('');
   const submissionDate = ref(new Date().toISOString().slice(0, 10));
+  
+  // Computed property to maintain backward compatibility
+  const clientName = computed(() => {
+    const parts = [
+      clientHonorific.value,
+      clientFirstName.value,
+      clientSurname.value
+    ].filter(Boolean);
+    return parts.join(' ');
+  });
 
   const fetchForm = async () => {
     loading.value = true;
@@ -53,7 +65,9 @@ export function useForm() {
   };
 
   const canSubmit = computed(() => {
-    return clientName.value.trim() !== '' && submissionDate.value.trim() !== '';
+    return clientFirstName.value.trim() !== '' && 
+           clientSurname.value.trim() !== '' && 
+           submissionDate.value.trim() !== '';
   });
 
   const submitForm = async () => {
@@ -68,7 +82,9 @@ export function useForm() {
     try {
       const payload = {
         form: formId,
-        client_name: clientName.value,
+        client_honorific: clientHonorific.value,
+        client_first_name: clientFirstName.value,
+        client_surname: clientSurname.value,
         submission_date: submissionDate.value,
         answers: Object.entries(answers).map(([question, value]) => ({
           question,
@@ -136,6 +152,9 @@ export function useForm() {
     form,
     questions,
     answers,
+    clientHonorific,
+    clientFirstName,
+    clientSurname,
     clientName,
     submissionDate,
     submissionId,

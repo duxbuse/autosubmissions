@@ -1,355 +1,51 @@
 {
   "id": 1,
-  "name": "Plea of guity",
-  "description": "Create submissions for a plea of guilty",
+  "name": "plea",
+  "description": "",
   "sections": [
     {
       "id": 1,
-      "name": "Client Details"
-    },
-    {
-      "id": 2,
-      "name": "Criminal History"
-    },
-    {
-      "id": 3,
-      "name": "Childhood"
-    },
-    {
-      "id": 4,
       "name": "Education"
     },
     {
-      "id": 5,
-      "name": "Employment"
-    },
-    {
-      "id": 6,
-      "name": "Mental Health"
-    },
-    {
-      "id": 7,
-      "name": "Community Support"
-    },
-    {
-      "id": 8,
-      "name": "Family"
+      "id": 2,
+      "name": "mental health"
     }
   ],
   "questions": [
     {
-      "id": 16,
-      "text": "highest level",
-      "question_type": "DROP",
+      "id": 1,
+      "text": "Education",
+      "question_type": "TEXT",
       "order": 1,
-      "output_template": "",
+      "output_template": "{{answer}}",
       "hidden": false,
-      "options": [
-        {
-          "id": 4,
-          "text": "yr12",
-          "triggers_question": []
-        },
-        {
-          "id": 5,
-          "text": "teritiary",
-          "triggers_question": [
-            17
-          ]
-        }
-      ],
-      "section_id": 4,
+      "options": [],
+      "section_id": 1,
       "triggers_question": []
     },
     {
-      "id": 17,
-      "text": "what tertiary",
+      "id": 2,
+      "text": "medication",
       "question_type": "TEXT",
       "order": 2,
-      "output_template": "",
-      "hidden": true,
+      "output_template": "{{answer}}",
+      "hidden": false,
       "options": [],
-      "section_id": 4,
-      "triggers_question": []
+      "section_id": 2,
+      "triggers_question": [
+        3
+      ]
     },
     {
-      "id": 18,
-      "text": "Date of Birth",
-      "question_type": "DATE",
+      "id": 3,
+      "text": "doctor",
+      "question_type": "TEXT",
       "order": 3,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 19,
-      "text": "Address",
-      "question_type": "TEXT",
-      "order": 4,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 20,
-      "text": "CRN",
-      "question_type": "TEXT",
-      "order": 5,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 1,
-      "triggers_question": []
-    },
-    {
-      "id": 21,
-      "text": "Prior convictions",
-      "question_type": "TEXT",
-      "order": 6,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 2,
-      "triggers_question": [
-        22
-      ]
-    },
-    {
-      "id": 22,
-      "text": "Current Court orders  / CCO",
-      "question_type": "TEXT",
-      "order": 7,
-      "output_template": "",
+      "output_template": "{{name}} regularly purchases from {{answer}}",
       "hidden": true,
       "options": [],
       "section_id": 2,
-      "triggers_question": []
-    },
-    {
-      "id": 23,
-      "text": "Both parents growing up?",
-      "question_type": "TEXT",
-      "order": 8,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": []
-    },
-    {
-      "id": 24,
-      "text": "Siblings",
-      "question_type": "TEXT",
-      "order": 9,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": []
-    },
-    {
-      "id": 25,
-      "text": "Any abuse?",
-      "question_type": "TEXT",
-      "order": 10,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": [
-        26
-      ]
-    },
-    {
-      "id": 26,
-      "text": "Was CPS involved?",
-      "question_type": "TEXT",
-      "order": 11,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 3,
-      "triggers_question": []
-    },
-    {
-      "id": 27,
-      "text": "Currently Employed?",
-      "question_type": "DROP",
-      "order": 12,
-      "output_template": "",
-      "hidden": false,
-      "options": [
-        {
-          "id": 6,
-          "text": "yes",
-          "triggers_question": [
-            28
-          ]
-        },
-        {
-          "id": 7,
-          "text": "no",
-          "triggers_question": [
-            29,
-            32
-          ]
-        }
-      ],
-      "section_id": 5,
-      "triggers_question": []
-    },
-    {
-      "id": 28,
-      "text": "Employment details",
-      "question_type": "TEXT",
-      "order": 13,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 5,
-      "triggers_question": [
-        29
-      ]
-    },
-    {
-      "id": 29,
-      "text": "Last role details",
-      "question_type": "TEXT",
-      "order": 14,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 5,
-      "triggers_question": [
-        30,
-        31
-      ]
-    },
-    {
-      "id": 30,
-      "text": "Last role end date",
-      "question_type": "DATE",
-      "order": 15,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 5,
-      "triggers_question": []
-    },
-    {
-      "id": 31,
-      "text": "Why did you leave?",
-      "question_type": "TEXT",
-      "order": 16,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 5,
-      "triggers_question": []
-    },
-    {
-      "id": 32,
-      "text": "Receive Centrelink (which benefit and how much)",
-      "question_type": "TEXT",
-      "order": 17,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 5,
-      "triggers_question": []
-    },
-    {
-      "id": 33,
-      "text": "Diagnosis's",
-      "question_type": "TEXT",
-      "order": 18,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 6,
-      "triggers_question": [
-        34
-      ]
-    },
-    {
-      "id": 34,
-      "text": "Medications",
-      "question_type": "TEXT",
-      "order": 19,
-      "output_template": "",
-      "hidden": true,
-      "options": [],
-      "section_id": 6,
-      "triggers_question": []
-    },
-    {
-      "id": 35,
-      "text": "GP",
-      "question_type": "TEXT",
-      "order": 20,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 7,
-      "triggers_question": []
-    },
-    {
-      "id": 36,
-      "text": "Church",
-      "question_type": "TEXT",
-      "order": 21,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 7,
-      "triggers_question": []
-    },
-    {
-      "id": 37,
-      "text": "Community Group",
-      "question_type": "TEXT",
-      "order": 22,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 7,
-      "triggers_question": []
-    },
-    {
-      "id": 38,
-      "text": "Parents",
-      "question_type": "TEXT",
-      "order": 23,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 8,
-      "triggers_question": []
-    },
-    {
-      "id": 39,
-      "text": "Siblings",
-      "question_type": "TEXT",
-      "order": 24,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 8,
-      "triggers_question": []
-    },
-    {
-      "id": 40,
-      "text": "Friends",
-      "question_type": "TEXT",
-      "order": 25,
-      "output_template": "",
-      "hidden": false,
-      "options": [],
-      "section_id": 8,
       "triggers_question": []
     }
   ]

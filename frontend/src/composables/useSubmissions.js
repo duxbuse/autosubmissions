@@ -4,7 +4,8 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-export function useSubmissions(formId, questions, answers, clientName, submissionDate, submissionId, submitSuccess, submitError) {
+export function useSubmissions(formId, questions, answers, clientInfo, submissionDate, submissionId, submitSuccess, submitError) {
+  const { clientHonorific, clientFirstName, clientSurname } = clientInfo;
   const searchClient = ref('');
   const searchResults = ref([]);
   const searchPerformed = ref(false);
@@ -21,9 +22,14 @@ export function useSubmissions(formId, questions, answers, clientName, submissio
       const res = await axios.get(`${API_BASE}/api/submissions/?form=${formId}`);
       let results = Array.isArray(res.data) ? res.data : (res.data.results || []);
       const searchLower = name.toLowerCase();
-      results = results.filter(sub =>
-        typeof sub.client_name === 'string' && sub.client_name.toLowerCase().includes(searchLower)
-      );
+      results = results.filter(sub => {
+        const fullName = [
+          sub.client_honorific,
+          sub.client_first_name,
+          sub.client_surname
+        ].filter(Boolean).join(' ').toLowerCase();
+        return fullName.includes(searchLower);
+      });
       searchResults.value = results;
       searchPerformed.value = true;
     } catch (e) {
@@ -35,7 +41,9 @@ export function useSubmissions(formId, questions, answers, clientName, submissio
   const loadSubmission = (sub) => {
     if (!sub) return;
     selectedSubmissionId.value = sub.id;
-    clientName.value = sub.client_name;
+    clientHonorific.value = sub.client_honorific || '';
+    clientFirstName.value = sub.client_first_name || '';
+    clientSurname.value = sub.client_surname || '';
     submissionDate.value = sub.submission_date;
     if (Array.isArray(sub.answers)) {
       for (const q of questions.value) {
@@ -65,7 +73,9 @@ export function useSubmissions(formId, questions, answers, clientName, submissio
       submitSuccess.value = false;
       submitError.value = false;
       Object.keys(answers).forEach(k => answers[k] = Array.isArray(answers[k]) ? [] : '');
-      clientName.value = '';
+      clientHonorific.value = '';
+      clientFirstName.value = '';
+      clientSurname.value = '';
       submissionDate.value = (new Date()).toISOString().slice(0, 10);
       alert('Submission deleted.');
       if (searchClient.value) await onSearchClient();

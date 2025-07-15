@@ -89,6 +89,11 @@ class Form(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    template_config = models.JSONField(
+        null=True, 
+        blank=True,
+        help_text="JSON configuration for document template structure and formatting"
+    )
 
     def __str__(self):
         return self.name
@@ -168,18 +173,126 @@ We will expose RESTful endpoints for the frontend to consume.
 
 ### 4.4. Document Generation Logic
 
-This logic will reside in a view connected to the `generate-doc` endpoint.
+This logic is encapsulated in the `DocGenerator` class which uses a template-based approach for document generation.
 
-1.  Receive a `submission_id`.
-2.  Fetch the `Submission` object and its related `Answer` set.
-3.  Initialize a new document using `python-docx`.
-4.  Iterate through the `Answers` in the correct question order.
-5.  For each `Answer`:
-    *   Get the corresponding `Question` and its `output_template`.
-    *   If the template is not empty, use Python's f-strings or `str.replace()` to substitute the placeholder (e.g., `{{answer}}`) with the `Answer.value`.
-    *   Add the resulting text to the document as a new paragraph, applying any required styling (e.g., bolding, headings).
-6.  Create an in-memory byte stream of the `.docx` file.
-7.  Return an `HttpResponse` with the correct `Content-Type` (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) and `Content-Disposition` headers to trigger a file download in the browser.
+#### 4.4.1 Template Configuration System
+
+The system uses a flexible JSON-based template configuration system with two levels:
+
+1. **Default Templates**: Stored in the `DocGenerator` class as `DEFAULT_TEMPLATES`
+   * Provides base templates for common form types (plea_of_guilty, bail_application)
+   * Defines standard section types and formatting
+   * Acts as a fallback when no custom template is specified
+
+2. **Custom Templates**: Stored in the Form model's `template_config` field
+   * Allows per-form customization of document structure
+   * Can override or extend default templates
+   * Provides flexibility for special case documents
+
+**Template Structure Example:**
+
+```json
+{
+    "title": "OUTLINE OF SUBMISSIONS FOR PLEA HEARING",
+    "sections": [
+        {
+            "name": "title_page",
+            "type": "title",
+            "content": {
+                "court": "IN THE MAGISTRATES' COURT",
+                "location": "AT MELBOURNE",
+                "parties": ["VICTORIA POLICE", "and", "{client_name}"]
+            }
+        },
+        {
+            "name": "chronology",
+            "type": "table",
+            "headers": ["date", "event"],
+            "question_key": "chronology"
+        }
+    ]
+}
+```
+
+#### 4.4.2 Section Types
+
+The template system supports various section types, each with specific formatting and behavior:
+
+1. **Title (`title`)**  
+   * Centered text with specific spacing
+   * Support for dynamic content replacement
+   * Consistent court document formatting
+
+2. **Text (`text`)**  
+   * Basic paragraphs with optional headings
+   * Support for default text values
+   * Dynamic content from form answers
+
+3. **Table (`table`)**  
+   * Configurable headers
+   * Auto-formatting for consistent appearance
+   * Optional total row calculations
+   * Summary text generation
+
+4. **List (`list`)**  
+   * Bullet points or numbered lists
+   * Configurable headings
+   * Dynamic content from form answers
+
+5. **Composite (`composite`)**  
+   * Complex sections with multiple parts
+   * Introduction text support
+   * Sub-section handling
+
+6. **Sections (`sections`)**  
+   * Grouped content with titles
+   * Multiple subsection support
+   * Flexible content organization
+
+7. **Details (`details`)**  
+   * Form field layouts
+   * Standard formatting for document metadata
+   * Support for firm details and dates
+
+8. **Signature (`signature`)**  
+   * Standard signature block formatting
+   * Date fields
+   * Consistent spacing
+
+#### 4.4.3 Document Generation Process
+
+1. **Template Selection**
+   * Check Form's `template_config`
+   * Fall back to `DEFAULT_TEMPLATES` if not specified
+   * Validate template structure
+
+2. **Section Processing**
+   * Iterate through template sections
+   * Call appropriate section handler methods
+   * Apply section-specific formatting
+
+3. **Data Mapping**
+   * Map submission answers to template placeholders
+   * Handle dynamic content replacement
+   * Apply consistent formatting
+
+4. **Document Assembly**
+   * Build document section by section
+   * Maintain consistent styling
+   * Handle special formatting requirements
+
+5. **Output Generation**
+   * Create final document in memory
+   * Apply any global formatting
+   * Return as BytesIO stream
+
+### 4.5 API Endpoints for Template Management
+
+Additional endpoints to support template configuration:
+
+* `GET /api/forms/<id>/template/`: Retrieve the current template configuration
+* `PUT /api/forms/<id>/template/`: Update the template configuration
+* `DELETE /api/forms/<id>/template/`: Reset to default template
 
 ## 5. Frontend Design (Vue.js)
 

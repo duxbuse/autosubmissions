@@ -207,10 +207,23 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'value']
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField(read_only=True)
+    answers = AnswerSerializer(many=True)
+    submission_date = serializers.DateField()
+
+    class Meta:
+        model = Submission
+        fields = ['id', 'form', 'client_honorific', 'client_first_name', 'client_surname', 'client_name', 'submission_date', 'submitted_at', 'answers']
+
+    def get_client_name(self, obj):
+        return obj.client_name
+
     def update(self, instance, validated_data):
         answers_data = validated_data.pop('answers', [])
         # Update main fields
-        instance.client_name = validated_data.get('client_name', instance.client_name)
+        instance.client_honorific = validated_data.get('client_honorific', instance.client_honorific)
+        instance.client_first_name = validated_data.get('client_first_name', instance.client_first_name)
+        instance.client_surname = validated_data.get('client_surname', instance.client_surname)
         instance.submission_date = validated_data.get('submission_date', instance.submission_date)
         if 'form' in validated_data:
             instance.form_id = int(validated_data['form']) if isinstance(validated_data['form'], str) else validated_data['form']
@@ -223,12 +236,6 @@ class SubmissionSerializer(serializers.ModelSerializer):
                 answer_data['question'] = int(answer_data['question'])
             Answer.objects.create(submission=instance, **answer_data)
         return instance
-    answers = AnswerSerializer(many=True)
-    client_name = serializers.CharField()
-    submission_date = serializers.DateField()
-    class Meta:
-        model = Submission
-        fields = ['id', 'form', 'client_name', 'submission_date', 'submitted_at', 'answers']
 
     def create(self, validated_data):
         answers_data = validated_data.pop('answers', [])

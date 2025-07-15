@@ -8,7 +8,12 @@
           <p>Form not found.</p>
         </div>
         <form v-else @submit.prevent="submitForm">
-          <FormHeader v-model:clientName="clientName" v-model:submissionDate="submissionDate" />
+          <FormHeader 
+            v-model:clientHonorific="clientHonorific"
+            v-model:clientFirstName="clientFirstName"
+            v-model:clientSurname="clientSurname"
+            v-model:submissionDate="submissionDate" 
+          />
           <div v-if="form && form.sections && form.sections.length">
             <FormSection
               v-for="(section, sIdx) in form.sections"
@@ -68,7 +73,9 @@ const {
   form,
   questions,
   answers,
-  clientName,
+  clientHonorific,
+  clientFirstName,
+  clientSurname,
   submissionDate,
   submissionId,
   submitSuccess,
@@ -87,7 +94,7 @@ const {
   onSearchClient,
   loadSubmission,
   deleteSubmission,
-} = useSubmissions(formId, questions, answers, clientName, submissionDate, submissionId, submitSuccess, submitError);
+} = useSubmissions(formId, questions, answers, { clientHonorific, clientFirstName, clientSurname }, submissionDate, submissionId, submitSuccess, submitError);
 
 const activeSectionIdx = ref(0);
 

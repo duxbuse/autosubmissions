@@ -1,5 +1,5 @@
 <template>
-  <div class="section-block">
+  <div class="section-block" ref="sectionBlock">
     <div
       class="section-header"
       :aria-expanded="isOpen"
@@ -30,6 +30,16 @@ const emit = defineEmits(['toggle', 'rename']);
 
 const editing = ref(false);
 const editName = ref(props.section.name);
+const sectionBlock = ref(null);
+
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    // Wait for the section to expand before scrolling
+    setTimeout(() => {
+      sectionBlock.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+});
 
 watch(() => props.section.name, (val) => {
   if (!editing.value) editName.value = val;

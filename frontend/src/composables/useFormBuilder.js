@@ -11,7 +11,11 @@ export function useFormBuilder() {
   const saving = ref(false);
   const saveSuccess = ref(false);
   const saveError = ref(false);
-  const form = reactive({ name: '', description: '' });
+  const form = reactive({ 
+    name: '', 
+    description: '',
+    template_type: 'plea_of_guilty'  // Add default template type
+  });
   const questions = ref([]);
   const sections = ref([{ id: 1, name: 'Section 1' }]);
   let sectionIdCounter = 2;
@@ -86,6 +90,7 @@ export function useFormBuilder() {
     console.debug('[resetForm] Resetting form');
     form.name = '';
     form.description = '';
+    form.template_type = 'plea_of_guilty';  // Reset template type to default
     questions.value = [];
     sections.value = [{ id: 1, name: 'Section 1' }];
     sectionIdCounter = 2;
@@ -93,64 +98,76 @@ export function useFormBuilder() {
   };
 
   // Only call resetForm when starting a new form, not after save
-function validateFormAndScroll() {
-  let valid = true;
-  validationErrors.form = {};
-  validationErrors.questions = [];
-  let firstInvalidQuestionIdx = null;
-  if (!form.name || !form.name.trim()) {
-    validationErrors.form.name = 'Form name is required.';
-    valid = false;
-  }
-  questions.value.forEach((q, qIdx) => {
-    const qErr = {};
-    if (!q.text || !q.text.trim()) {
-      qErr.text = 'Question text is required.';
+  function validateFormAndScroll() {
+    let valid = true;
+    validationErrors.form = {};
+    validationErrors.questions = [];
+    let firstInvalidQuestionIdx = null;
+
+    // Validate form name
+    if (!form.name || form.name.trim() === '') {
+      validationErrors.form.name = 'Form name is required';
       valid = false;
-      if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
     }
-    if (["MC", "CHECK", "DROP"].includes(q.question_type)) {
-      if (!q.options || q.options.length === 0) {
-        qErr.options = 'At least one option is required.';
-        valid = false;
-        if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
-      } else {
-        q.options.forEach((o, oIdx) => {
-          if (!o.text || !o.text.trim()) {
-            if (!qErr.optionsDetail) qErr.optionsDetail = {};
-            qErr.optionsDetail[oIdx] = 'Option text is required.';
-            valid = false;
-            if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
-          }
-        });
-      }
+
+    // Validate template type
+    if (!form.template_type) {
+      validationErrors.form.template_type = 'Template type is required';
+      valid = false;
+    } else if (!['plea_of_guilty', 'bail_application'].includes(form.template_type)) {
+      validationErrors.form.template_type = 'Invalid template type';
+      valid = false;
     }
-    if (q.hidden) {
-      const isTriggered = questions.value.some(innerQ =>
-        (innerQ.triggers_question && innerQ.triggers_question.includes(q.id)) ||
-        (innerQ.options && innerQ.options.some(o => o.triggers_question && o.triggers_question.includes(q.id)))
-      );
-      if (!isTriggered) {
-        qErr.hidden = 'This hidden question is not triggered by any other question.';
+
+    questions.value.forEach((q, qIdx) => {
+      const qErr = {};
+      if (!q.text || !q.text.trim()) {
+        qErr.text = 'Question text is required.';
         valid = false;
         if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
       }
-    }
-    validationErrors.questions[qIdx] = qErr;
-  });
-  // Scroll to first invalid question if any
-  if (firstInvalidQuestionIdx !== null) {
-    setTimeout(() => {
-      const el = document.querySelector(`[data-question-idx="${firstInvalidQuestionIdx}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('highlight-validation');
-        setTimeout(() => el.classList.remove('highlight-validation'), 2000);
+      if (["MC", "CHECK", "DROP"].includes(q.question_type)) {
+        if (!q.options || q.options.length === 0) {
+          qErr.options = 'At least one option is required.';
+          valid = false;
+          if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+        } else {
+          q.options.forEach((o, oIdx) => {
+            if (!o.text || !o.text.trim()) {
+              if (!qErr.optionsDetail) qErr.optionsDetail = {};
+              qErr.optionsDetail[oIdx] = 'Option text is required.';
+              valid = false;
+              if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+            }
+          });
+        }
       }
-    }, 100);
+      if (q.hidden) {
+        const isTriggered = questions.value.some(innerQ =>
+          (innerQ.triggers_question && innerQ.triggers_question.includes(q.id)) ||
+          (innerQ.options && innerQ.options.some(o => o.triggers_question && o.triggers_question.includes(q.id)))
+        );
+        if (!isTriggered) {
+          qErr.hidden = 'This hidden question is not triggered by any other question.';
+          valid = false;
+          if (firstInvalidQuestionIdx === null) firstInvalidQuestionIdx = qIdx;
+        }
+      }
+      validationErrors.questions[qIdx] = qErr;
+    });
+    // Scroll to first invalid question if any
+    if (firstInvalidQuestionIdx !== null) {
+      setTimeout(() => {
+        const el = document.querySelector(`[data-question-idx="${firstInvalidQuestionIdx}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('highlight-validation');
+          setTimeout(() => el.classList.remove('highlight-validation'), 2000);
+        }
+      }, 100);
+    }
+    return valid;
   }
-  return valid;
-}
 
   function resolveTriggersQuestion(option, questionsArr) {
     if (!option.triggers_question) return [];

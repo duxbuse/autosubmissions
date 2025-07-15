@@ -6,10 +6,26 @@ class Form(models.Model):
     """
     Represents a form type, e.g., 'Bail Hearing'.
     """
+    class TemplateType(models.TextChoices):
+        PLEA_OF_GUILTY = 'plea_of_guilty', 'Plea of Guilty'
+        BAIL_APPLICATION = 'bail_application', 'Bail Application'
+
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # --- Template configuration ---
+    template_type = models.CharField(
+        max_length=50,
+        choices=TemplateType.choices,
+        default=TemplateType.PLEA_OF_GUILTY,
+        help_text="The type of document template to use for this form"
+    )
+    template_config = models.JSONField(
+        null=True, 
+        blank=True, 
+        help_text="Configuration for document generation, including sections to include, their order, and formatting."
+    )
     # --- Section support ---
     sections = models.JSONField(null=True, blank=True, help_text="List of sections for this form, as an array of objects with id and name.")
 
@@ -74,9 +90,22 @@ class Submission(models.Model):
     A single, completed form submission by a user.
     """
     form = models.ForeignKey(Form, on_delete=models.PROTECT)
-    client_name = models.CharField(max_length=255)
+    client_honorific = models.CharField(max_length=10, blank=True)
+    client_first_name = models.CharField(max_length=255)
+    client_surname = models.CharField(max_length=255)
     submission_date = models.DateField()
     submitted_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def client_name(self):
+        """
+        Returns the full name of the client, maintaining compatibility with existing code.
+        """
+        parts = []
+        if self.client_honorific:
+            parts.append(self.client_honorific)
+        parts.extend([self.client_first_name, self.client_surname])
+        return ' '.join(parts)
 
 class Answer(models.Model):
     """
@@ -85,4 +114,27 @@ class Answer(models.Model):
     submission = models.ForeignKey(Submission, related_name='answers', on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.SET_NULL, null=True, blank=True)
     value = models.TextField() # Stores text, or a JSON list of selected option IDs
+
+    def get_formatted_value(self):
+        """
+        Returns the answer value with template variables replaced.
+        Supports {{answer}} and {{name}} variables.
+        """
+        if not self.question or not self.question.output_template:
+            return self.value
+
+        # Get the formatted text with {{answer}} replaced
+        text = self.question.output_template.replace('{{answer}}', self.value)
+        
+        # Replace {{name}} with honorific + surname if present
+        if '{{name}}' in text and self.submission:
+            name_parts = []
+            if self.submission.client_honorific:
+                name_parts.append(self.submission.client_honorific)
+            if self.submission.client_surname:
+                name_parts.append(self.submission.client_surname)
+            name = ' '.join(name_parts)
+            text = text.replace('{{name}}', name)
+            
+        return text
 
