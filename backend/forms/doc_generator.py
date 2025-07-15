@@ -1,8 +1,10 @@
 from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-import re
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
+from docx.enum.style import WD_STYLE_TYPE
+from docx.oxml import parse_xml
 from io import BytesIO
+from datetime import datetime
 from .models import Submission, Question, Answer
 
 class DocGenerator:
@@ -72,23 +74,24 @@ class DocGenerator:
         
         doc = Document()
         
-        # Add header with submission date and client name
-        submission_date = self.submission.submission_date.strftime('%B %d, %Y') if self.submission.submission_date else ''
+        # Set up the document
+        section = doc.sections[0]
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        
+        # Set up default paragraph style
+        style = doc.styles['Normal']
+        style.font.name = 'Calibri'
+        style.font.size = Pt(11)
+        style.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        style.paragraph_format.space_after = Pt(0)  # No extra space after paragraphs by default
+        
+        # No header section needed
+
+        # Get client name for the document
         client_name = self.submission.client_name or 'client'
-
-        # Add header
-        header = doc.sections[0].header
-        p_client = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-        p_client.text = f"Client: {client_name}"
-        p_client.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        run_client = p_client.runs[0] if p_client.runs else p_client.add_run()
-        run_client.font.size = Pt(12)
-
-        p_date = header.add_paragraph()
-        p_date.text = f"Submission Date: {submission_date}"
-        p_date.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
-        run_date = p_date.runs[0]
-        run_date.font.size = Pt(12)
 
         # Process template sections
         for section in template_config['sections']:
@@ -105,32 +108,163 @@ class DocGenerator:
         return f
 
     def _add_title_page(self, doc, content, client_name):
-        """Add a title page to the document"""
-        # Add court name
-        p = doc.add_paragraph()
-        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        run = p.add_run(content['court'])
-        run.bold = True
-        run.font.size = Pt(14)
+        """Add a title page to the document following court format"""
+        # Set up styles for left-aligned text
+        style = doc.styles.add_style('Court Header Left', WD_STYLE_TYPE.PARAGRAPH)
+        style.font.name = 'Calibri'
+        style.font.size = Pt(11)
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        style.paragraph_format.space_after = Pt(0)
 
-        # Add location
-        p = doc.add_paragraph()
-        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        run = p.add_run(content['location'])
-        run.bold = True
-        run.font.size = Pt(14)
+        # Add court name and location in top left
+        p = doc.add_paragraph(style='Court Header Left')
+        p.add_run(content['court'])
+        
+        p = doc.add_paragraph(style='Court Header Left')
+        p.add_run(content['location'])
 
-        # Add parties
-        for party in content['parties']:
-            p = doc.add_paragraph()
-            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            run = p.add_run(party.format(client_name=client_name))
-            run.bold = True
-            run.font.size = Pt(12)
+        # Set up center style for parties
+        style = doc.styles.add_style('Court Header Center', WD_STYLE_TYPE.PARAGRAPH)
+        style.font.name = 'Calibri'
+        style.font.size = Pt(11)
+        style.font.bold = True
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        style.paragraph_format.space_after = Pt(6)
+
+        # Add spacing before parties
+        doc.add_paragraph()
+        doc.add_paragraph()
+        
+        # Center align the parties
+        p = doc.add_paragraph(style='Court Header Center')
+        victoria_police = p.add_run("VICTORIA POLICE")
+        
+        p = doc.add_paragraph(style='Court Header Center')
+        p.add_run("and")
+
+        # Add client name (surname only)
+        p = doc.add_paragraph(style='Court Header Center')
+        # Get just the surname (last word in the name)
+        name_parts = client_name.split()
+        surname = name_parts[-1]  # Take the last part as surname
+        p.add_run(surname.upper())
+
+        # Add spacing before title
+        doc.add_paragraph()
+        doc.add_paragraph()
+
+        # Set up centered style for title
+        if 'Court Header Center Bold' not in doc.styles:
+            style = doc.styles.add_style('Court Header Center Bold', WD_STYLE_TYPE.PARAGRAPH)
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(12)
+            style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            style.paragraph_format.space_after = Pt(12)
+
+        # Add the underlined title
+        p = doc.add_paragraph(style='Court Header Center Bold')
+        title_run = p.add_run("OUTLINE OF SUBMISSIONS FOR PLEA HEARING")
+        title_run.bold = True
+        title_run.underline = True
+        
+        # Add the information table
+        doc.add_paragraph()  # Space before table
+        table = doc.add_table(rows=4, cols=2)
+        table.style = None  # Remove default table style
+        table.autofit = False
+        table.allow_autofit = False
+        
+        # Set full width table with right-aligned second column
+        section = doc.sections[0]
+        available_width = section.page_width - section.left_margin - section.right_margin
+        # Convert to twips (twentieth of a point)
+        total_width = int(available_width * 1440 / Inches(1))
+        col1_width = int(total_width * 0.7)  # 70% for first column
+        col2_width = int(total_width * 0.3)  # 30% for second column
+        
+        # Set column widths
+        for cell in table.columns[0].cells:
+            cell._tc.tcPr.append(parse_xml(f'<w:tcW xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="{col1_width}" w:type="dxa"/>'))
+        for cell in table.columns[1].cells:
+            cell._tc.tcPr.append(parse_xml(f'<w:tcW xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="{col2_width}" w:type="dxa"/>'))
+
+        # Set table properties and borders
+        
+        # Create table properties
+        tblPr = parse_xml(r'''<w:tblPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:tblBorders>
+                <w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+                <w:left w:val="none"/>
+                <w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+                <w:right w:val="none"/>
+                <w:insideH w:val="none"/>
+                <w:insideV w:val="dashed" w:sz="4" w:space="0" w:color="auto"/>
+            </w:tblBorders>
+        </w:tblPr>''')
+        
+        # Remove any existing table properties
+        for element in table._element.findall('.//w:tblPr', {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
+            element.getparent().remove(element)
+        
+        # Add the new table properties
+        table._element.insert(0, tblPr)
+
+        # Fill table
+        table.cell(0, 0).text = "Date of Document:"
+        table.cell(0, 1).text = datetime.now().strftime("%d %B %Y")
+        table.cell(1, 0).text = "Filed on behalf of:"
+        table.cell(1, 1).text = "The Accused"
+        table.cell(2, 0).text = "Prepared by:"
+        table.cell(2, 1).text = "Solicitors code: 113 758"
+        table.cell(3, 0).text = "James Dowsley & Associates"
+        table.cell(3, 1).text = "Telephone: 9781 4900"
+
+        # Format table text and align second column to right
+        for row in table.rows:
+            for i, cell in enumerate(row.cells):
+                paragraphs = cell.paragraphs
+                for paragraph in paragraphs:
+                    if i == 1:  # Second column
+                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+                    for run in paragraph.runs:
+                        run.font.name = 'Calibri'
+                        run.font.size = Pt(11)
 
     def _add_section(self, doc, section_name, subsections_or_config):
         """Add a section with subsections and their fields"""
-        doc.add_heading(section_name, level=1)
+        # Create section heading style
+        if 'Section Heading' not in doc.styles:
+            style = doc.styles.add_style('Section Heading', WD_STYLE_TYPE.PARAGRAPH)
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(12)
+            style.font.bold = True
+            style.paragraph_format.space_before = Pt(12)
+            style.paragraph_format.space_after = Pt(6)
+            style.paragraph_format.keep_with_next = True
+
+        # Create italic subheading style
+        if 'Italic Subheading' not in doc.styles:
+            style = doc.styles.add_style('Italic Subheading', WD_STYLE_TYPE.PARAGRAPH)
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(12)
+            style.font.italic = True
+            style.paragraph_format.space_before = Pt(12)
+            style.paragraph_format.space_after = Pt(6)
+            style.paragraph_format.left_indent = Inches(0)
+
+        # Create answer text style
+        if 'Answer Text' not in doc.styles:
+            style = doc.styles.add_style('Answer Text', WD_STYLE_TYPE.PARAGRAPH)
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(12)
+            style.paragraph_format.space_after = Pt(6)
+            style.paragraph_format.left_indent = Inches(0.5)
+            style.paragraph_format.first_line_indent = Inches(-0.25)  # Hanging indent for numbers
+            style.paragraph_format.line_spacing = 1.0
+
+        # Add the section heading
+        p = doc.add_paragraph(style='Section Heading')
+        p.add_run(section_name.upper())  # Make section heading uppercase
         
         # Initialize answer counter
         answer_number = 1
@@ -148,14 +282,19 @@ class DocGenerator:
                     ]
                     
                     if section_questions:
-                        doc.add_heading(section_name, level=2)
-                        for q in section_questions:                        answer_obj = Answer.objects.filter(submission=self.submission, question=q).first()
-                        if answer_obj and str(answer_obj.value).strip():
-                            p = doc.add_paragraph()
-                            p.add_run(f"{answer_number}. ").bold = True
-                            p.add_run(f"{q.text}: ").bold = True
-                            p.add_run(str(answer_obj.get_formatted_value()))
-                            answer_number += 1
+                        # All section headings except the main "PERSONAL CIRCUMSTANCES" should be italic
+                        if section_name.lower() != "personal circumstances":
+                            p = doc.add_paragraph(style='Italic Subheading')
+                            p.add_run(section_name.lower())  # Use lowercase for subheadings
+                        
+                        for q in section_questions:
+                            answer_obj = Answer.objects.filter(submission=self.submission, question=q).first()
+                            if answer_obj and str(answer_obj.value).strip():
+                                p = doc.add_paragraph(style='Answer Text')
+                                # Add the number and question text together with the answer
+                                answer_text = f"{answer_number}. {q.text} {str(answer_obj.get_formatted_value())}"
+                                p.add_run(answer_text)
+                                answer_number += 1
         else:
             # Use template-defined subsections (for bail application or other templates)
             for subsection in subsections_or_config:
@@ -167,12 +306,19 @@ class DocGenerator:
                 ]
                 
                 if matching_questions:
-                    doc.add_heading(subsection, level=2)
+                    # All subsection headings should be italic except main sections
+                    if subsection.lower() != "personal circumstances":
+                        p = doc.add_paragraph(style='Italic Subheading')
+                        p.add_run(subsection.lower())  # Use lowercase for subheadings
+                    else:
+                        p = doc.add_paragraph(style='Section Heading')
+                        p.add_run(subsection.upper())
+                    
                     for q in matching_questions:
                         answer_obj = Answer.objects.filter(submission=self.submission, question=q).first()
                         if answer_obj and str(answer_obj.value).strip():
-                            p = doc.add_paragraph()
-                            p.add_run(f"{answer_number}. ").bold = True
-                            p.add_run(f"{q.text}: ").bold = True
-                            p.add_run(str(answer_obj.get_formatted_value()))
+                            p = doc.add_paragraph(style='Answer Text')
+                            # Add the number and question text together with the answer
+                            answer_text = f"{answer_number}. {q.text} {str(answer_obj.get_formatted_value())}"
+                            p.add_run(answer_text)
                             answer_number += 1
