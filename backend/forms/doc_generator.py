@@ -100,8 +100,11 @@ class DocGenerator:
         
         # No header section needed
 
-        # Get client name for the document
+        # Get client name for the document (and remove honorifics)
         client_name = self.submission.client_name or 'client'
+        print(f"Generating document for client: {client_name}")
+        client_names = client_name.strip().split()
+        client_name = ' '.join(client_names[-2:])  # Join names back together but only last 2 which should ignore the 1st honorific if present
 
         # Process template sections
         for section in template_config['sections']:

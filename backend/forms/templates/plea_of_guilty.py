@@ -40,12 +40,9 @@ def add_title_page(doc, content, client_name):
     p = doc.add_paragraph(style='Court Header Center')
     p.add_run("and")
 
-    # Add client name (surname only)
+    # Add client name
     p = doc.add_paragraph(style='Court Header Center')
-    # Get just the surname (last word in the name)
-    name_parts = client_name.split()
-    surname = name_parts[-1]  # Take the last part as surname
-    p.add_run(surname.upper())
+    p.add_run(client_name.upper())
 
     # Add spacing before title
     doc.add_paragraph()
