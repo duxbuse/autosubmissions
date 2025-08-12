@@ -1,24 +1,48 @@
 {
   "id": 1,
-  "name": "plea",
-  "description": "",
+  "name": "Plea Of Guilt",
+  "description": "Plea of Guilty Submission form",
   "sections": [
     {
       "id": 1,
-      "name": "Education"
+      "name": "Client Details"
     },
     {
       "id": 2,
-      "name": "mental health"
+      "name": "Criminal History"
+    },
+    {
+      "id": 3,
+      "name": "Childhood"
+    },
+    {
+      "id": 4,
+      "name": "Education"
+    },
+    {
+      "id": 5,
+      "name": "Employment"
+    },
+    {
+      "id": 6,
+      "name": "Mental Health"
+    },
+    {
+      "id": 7,
+      "name": "Community Support"
+    },
+    {
+      "id": 8,
+      "name": "Family"
     }
   ],
   "questions": [
     {
       "id": 1,
-      "text": "Education",
+      "text": "Date of birth",
       "question_type": "TEXT",
       "order": 1,
-      "output_template": "{{answer}}",
+      "output_template": "{{name}} was born {{answer}}",
       "hidden": false,
       "options": [],
       "section_id": 1,
@@ -26,10 +50,10 @@
     },
     {
       "id": 2,
-      "text": "medication",
+      "text": "Previously Imprisoned",
       "question_type": "TEXT",
       "order": 2,
-      "output_template": "{{answer}}",
+      "output_template": "Previous Incarceration: {{answer}}",
       "hidden": false,
       "options": [],
       "section_id": 2,
@@ -39,13 +63,338 @@
     },
     {
       "id": 3,
-      "text": "doctor",
+      "text": "Current Orders / CCO",
       "question_type": "TEXT",
       "order": 3,
-      "output_template": "{{name}} regularly purchases from {{answer}}",
+      "output_template": "{{name}} must currently abide with {{answer}}",
       "hidden": true,
       "options": [],
       "section_id": 2,
+      "triggers_question": []
+    },
+    {
+      "id": 4,
+      "text": "Address",
+      "question_type": "TEXT",
+      "order": 4,
+      "output_template": "{{name}} currently resides at {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 1,
+      "triggers_question": []
+    },
+    {
+      "id": 5,
+      "text": "CRN",
+      "question_type": "TEXT",
+      "order": 5,
+      "output_template": "{{name}} crn is: {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 1,
+      "triggers_question": []
+    },
+    {
+      "id": 6,
+      "text": "Both parents?",
+      "question_type": "CHECK",
+      "order": 6,
+      "output_template": "{{name}} had {{answer}} parents present in their upbringing",
+      "hidden": false,
+      "options": [
+        {
+          "id": 1,
+          "text": "Mum",
+          "triggers_question": []
+        },
+        {
+          "id": 2,
+          "text": "Dad",
+          "triggers_question": []
+        }
+      ],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 7,
+      "text": "number of siblings",
+      "question_type": "TEXT",
+      "order": 7,
+      "output_template": "{{name}} grew up with {{answer}} siblings",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 8,
+      "text": "Childhood abuse?",
+      "question_type": "TEXT",
+      "order": 8,
+      "output_template": "{{name}} experienced a troubled childhood due to {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": [
+        9
+      ]
+    },
+    {
+      "id": 9,
+      "text": "Was cps involved?",
+      "question_type": "TEXT",
+      "order": 9,
+      "output_template": "This lead to Child protection services being called at {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 3,
+      "triggers_question": []
+    },
+    {
+      "id": 10,
+      "text": "Level of schooling",
+      "question_type": "TEXT",
+      "order": 10,
+      "output_template": "",
+      "hidden": false,
+      "options": [],
+      "section_id": 4,
+      "triggers_question": []
+    },
+    {
+      "id": 11,
+      "text": "Post School",
+      "question_type": "DROP",
+      "order": 11,
+      "output_template": "",
+      "hidden": false,
+      "options": [
+        {
+          "id": 3,
+          "text": "Tertiary",
+          "triggers_question": []
+        },
+        {
+          "id": 4,
+          "text": "Straight to employment",
+          "triggers_question": []
+        }
+      ],
+      "section_id": 4,
+      "triggers_question": []
+    },
+    {
+      "id": 15,
+      "text": "Currently working",
+      "question_type": "DROP",
+      "order": 12,
+      "output_template": "",
+      "hidden": false,
+      "options": [
+        {
+          "id": 6,
+          "text": "No",
+          "triggers_question": [
+            16,
+            12
+          ]
+        },
+        {
+          "id": 7,
+          "text": "Yes",
+          "triggers_question": [
+            19,
+            20
+          ]
+        }
+      ],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 16,
+      "text": "Centerlink code/benefit",
+      "question_type": "TEXT",
+      "order": 13,
+      "output_template": "Regarding centerlink {{name}} is on: {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": [
+        17
+      ]
+    },
+    {
+      "id": 17,
+      "text": "Centerlink How much",
+      "question_type": "TEXT",
+      "order": 14,
+      "output_template": "which provides {{answer}} per week",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 19,
+      "text": "Current job where",
+      "question_type": "TEXT",
+      "order": 15,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 20,
+      "text": "Current Job how much",
+      "question_type": "TEXT",
+      "order": 16,
+      "output_template": "",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 12,
+      "text": "Last role",
+      "question_type": "TEXT",
+      "order": 17,
+      "output_template": "{{name}} previously worked at {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": [
+        13,
+        14
+      ]
+    },
+    {
+      "id": 13,
+      "text": "End date for last role",
+      "question_type": "DATE",
+      "order": 18,
+      "output_template": "The end date for {{name}} last role was {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 14,
+      "text": "Why did you leave",
+      "question_type": "TEXT",
+      "order": 19,
+      "output_template": "{{name}} then left this role due to {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 5,
+      "triggers_question": []
+    },
+    {
+      "id": 21,
+      "text": "Any ongoing diagnosis",
+      "question_type": "TEXT",
+      "order": 20,
+      "output_template": "{{name}} is currently suffering with {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 6,
+      "triggers_question": [
+        22
+      ]
+    },
+    {
+      "id": 22,
+      "text": "medication",
+      "question_type": "TEXT",
+      "order": 21,
+      "output_template": "for which they are currently prescribed {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 6,
+      "triggers_question": [
+        23
+      ]
+    },
+    {
+      "id": 23,
+      "text": "Doctor",
+      "question_type": "TEXT",
+      "order": 22,
+      "output_template": "From doctor {{answer}}",
+      "hidden": true,
+      "options": [],
+      "section_id": 6,
+      "triggers_question": []
+    },
+    {
+      "id": 24,
+      "text": "GP",
+      "question_type": "TEXT",
+      "order": 23,
+      "output_template": "{{name}} is currently seeing their gp {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 25,
+      "text": "Church",
+      "question_type": "TEXT",
+      "order": 24,
+      "output_template": "{{name}} is a attendee of {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 26,
+      "text": "Community Group",
+      "question_type": "TEXT",
+      "order": 25,
+      "output_template": "{{name}} is actively involved with {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
+      "triggers_question": []
+    },
+    {
+      "id": 27,
+      "text": "Relationship with Parents",
+      "question_type": "TEXT",
+      "order": 26,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 28,
+      "text": "Relationship with Siblings",
+      "question_type": "TEXT",
+      "order": 27,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 29,
+      "text": "Relationship with Friends",
+      "question_type": "TEXT",
+      "order": 28,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
       "triggers_question": []
     }
   ]
