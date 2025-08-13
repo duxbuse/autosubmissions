@@ -1,5 +1,5 @@
 from docx import Document
-from docx.shared import Pt, Inches
+from docx.shared import Pt, Inches, Cm
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
 import os
 from io import BytesIO
@@ -120,25 +120,38 @@ class DocGenerator:
             signature_text = content.get('signature','')
             signature_image = content.get('image','')
             date_str = datetime.now().strftime('%d/%m/%Y')
-
+ 
             client_name_for_sig = self.submission.client_name or 'client'
             signature_text = signature_text.replace('{{name}}', client_name_for_sig)
-
-            p = doc.add_paragraph()
-            p.add_run(signature_text)
-            p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-
+ 
+            # Add signature lines on separate paragraphs (handle newline)
+            for line in signature_text.split('\n'):
+                p = doc.add_paragraph()
+                p.add_run(line)
+                p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+ 
             if signature_image:
                 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-                image_path = os.path.join(base_dir, 'static', signature_image)
-                try:
-                    r = p.add_run()
-                    r.add_picture(image_path, width=Inches(1.5))
-                    p = doc.add_paragraph()
-                    p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-                except Exception:
-                    pass
-
+                image_path = None
+                # try multiple plausible paths
+                candidates = [
+                    os.path.join(base_dir, 'static', signature_image),
+                    os.path.join(base_dir, 'form_generator', signature_image),
+                    os.path.join(base_dir, signature_image)
+                ]
+                for c in candidates:
+                    if os.path.exists(c):
+                        image_path = c
+                        break
+                if image_path:
+                    try:
+                        p_image = doc.add_paragraph()
+                        p_image.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                        p_image.add_run().add_picture(image_path, width=Cm(1.85))
+                    except Exception:
+                        pass
+ 
+            # Add date on its own paragraph
             p_date = doc.add_paragraph()
             p_date.add_run(date_str)
             p_date.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
