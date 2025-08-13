@@ -32,6 +32,10 @@
       "name": "Community Support"
     },
     {
+      "id": 9,
+      "name": "Drug and Alcohol"
+    },
+    {
       "id": 8,
       "name": "Family"
     }
@@ -39,10 +43,10 @@
   "questions": [
     {
       "id": 1,
-      "text": "Date of birth",
+      "text": "Years old",
       "question_type": "TEXT",
       "order": 1,
-      "output_template": "{{name}} was born {{answer}}",
+      "output_template": "{{name}} is before the court a {{answer}}-year old",
       "hidden": false,
       "options": [],
       "section_id": 1,
@@ -132,7 +136,7 @@
       "text": "Childhood abuse?",
       "question_type": "TEXT",
       "order": 8,
-      "output_template": "{{name}} experienced a troubled childhood due to {{answer}}",
+      "output_template": "{{name}} instructs his childhood is one of significant disadvantage. Suffering {{answer}}",
       "hidden": false,
       "options": [],
       "section_id": 3,
@@ -217,7 +221,7 @@
       "text": "Centerlink code/benefit",
       "question_type": "TEXT",
       "order": 13,
-      "output_template": "Regarding centerlink {{name}} is on: {{answer}}",
+      "output_template": "{{name}} relies on centerlink provided with {{answer}} to fund their lifestyle",
       "hidden": true,
       "options": [],
       "section_id": 5,
@@ -230,7 +234,7 @@
       "text": "Centerlink How much",
       "question_type": "TEXT",
       "order": 14,
-      "output_template": "which provides {{answer}} per week",
+      "output_template": "which yields {{answer}} per week",
       "hidden": true,
       "options": [],
       "section_id": 5,
@@ -241,7 +245,7 @@
       "text": "Current job where",
       "question_type": "TEXT",
       "order": 15,
-      "output_template": "",
+      "output_template": "{{name}} is gainfully employed with {{answer}}",
       "hidden": true,
       "options": [],
       "section_id": 5,
@@ -249,10 +253,10 @@
     },
     {
       "id": 20,
-      "text": "Current Job how much",
+      "text": "Current Job how much (per week)",
       "question_type": "TEXT",
       "order": 16,
-      "output_template": "",
+      "output_template": "which yields {{answer}} per week",
       "hidden": true,
       "options": [],
       "section_id": 5,
@@ -354,25 +358,25 @@
       "triggers_question": []
     },
     {
-      "id": 26,
-      "text": "Community Group",
-      "question_type": "TEXT",
-      "order": 25,
-      "output_template": "{{name}} is actively involved with {{answer}}",
-      "hidden": false,
-      "options": [],
-      "section_id": 7,
-      "triggers_question": []
-    },
-    {
       "id": 27,
       "text": "Relationship with Parents",
       "question_type": "TEXT",
-      "order": 26,
+      "order": 25,
       "output_template": "{{answer}}",
       "hidden": false,
       "options": [],
       "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 26,
+      "text": "Community Group",
+      "question_type": "TEXT",
+      "order": 26,
+      "output_template": "{{name}} is actively involved with {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 7,
       "triggers_question": []
     },
     {
@@ -395,6 +399,39 @@
       "hidden": false,
       "options": [],
       "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 30,
+      "text": "Grew up in (town)",
+      "question_type": "TEXT",
+      "order": 29,
+      "output_template": "{{name}} grew up in {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 8,
+      "triggers_question": []
+    },
+    {
+      "id": 31,
+      "text": "Starter substance",
+      "question_type": "TEXT",
+      "order": 30,
+      "output_template": "{{name}} instructs bing introduced to {{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 9,
+      "triggers_question": []
+    },
+    {
+      "id": 32,
+      "text": "Current substances",
+      "question_type": "TEXT",
+      "order": 31,
+      "output_template": "{{answer}}",
+      "hidden": false,
+      "options": [],
+      "section_id": 9,
       "triggers_question": []
     }
   ]

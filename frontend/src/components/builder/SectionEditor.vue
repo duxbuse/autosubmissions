@@ -1,5 +1,5 @@
 <template>
-  <div class="section-block" ref="sectionBlock">
+  <div class="section-block" ref="sectionBlock" draggable="true" @dragstart="onDragStart" @dragover.prevent @drop="onDrop">
     <div
       class="section-header"
       :aria-expanded="isOpen"
@@ -11,7 +11,7 @@
         <input v-else type="text" v-model="editName" @blur="finishEditing" @keyup.enter="finishEditing" @keyup.esc="cancelEditing" />
       </div>
       <div class="header-controls">
-        <slot name="header-extra"></slot>
+        <slot name="header-extra" :sectionIndex="index"></slot>
         <span class="accordion-arrow">{{ isOpen ? '▼' : '▶' }}</span>
       </div>
     </div>
@@ -25,8 +25,8 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-const props = defineProps(['section', 'isOpen']);
-const emit = defineEmits(['toggle', 'rename']);
+const props = defineProps(['section','isOpen','index']);
+const emit = defineEmits(['toggle', 'rename','dragdrop']);
 
 const editing = ref(false);
 const editName = ref(props.section.name);
@@ -44,12 +44,25 @@ watch(() => props.isOpen, (isOpen) => {
 watch(() => props.section.name, (val) => {
   if (!editing.value) editName.value = val;
 });
-// Handle click and double click on the whole header
+
+// Drag and drop handlers
+const onDragStart = (e) => {
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(props.index));
+};
+
+const onDrop = (e) => {
+  const fromIndex = Number(e.dataTransfer.getData('text/plain'));
+  const toIndex = props.index;
+  if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+    emit('dragdrop', { from: fromIndex, to: toIndex });
+  }
+};
+
+// Header click editing logic
 let clickTimeout = null;
 const onHeaderClick = (e) => {
-  // Prevent click if editing
   if (editing.value) return;
-  // Delay to distinguish single from double click
   if (clickTimeout) clearTimeout(clickTimeout);
   clickTimeout = setTimeout(() => {
     emit('toggle');
@@ -58,12 +71,10 @@ const onHeaderClick = (e) => {
 };
 
 const onHeaderDblClick = (e) => {
-  // Prevent double click if already editing
   if (editing.value) return;
   if (clickTimeout) clearTimeout(clickTimeout);
   editing.value = true;
   editName.value = props.section.name;
-  // Optionally, focus input after next tick
 };
 
 const startEditing = (e) => {

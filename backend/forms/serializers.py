@@ -41,6 +41,7 @@ class OptionSerializer(serializers.ModelSerializer):
 class SectionSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
+    order = serializers.IntegerField(required=False)
 
 class QuestionSerializer(serializers.ModelSerializer):
     options = OptionSerializer(many=True, required=False)

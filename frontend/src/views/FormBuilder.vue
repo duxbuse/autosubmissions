@@ -30,12 +30,16 @@
           v-for="(section, sIdx) in sections"
           :key="section.id"
           :section="section"
+          :index="sIdx"
           :isOpen="activeSectionIdx === sIdx"
+          @dragdrop="handleSectionDragDrop($event)"
           @toggle="() => openSection(sIdx)"
           @rename="renameSection(sIdx, $event)"
         >
           <template #header-extra>
-            <button @click.stop="removeSection(sIdx)" style="position:absolute;top:0.5em;right:0.75em;background:none;border:none;font-size:1.2em;line-height:1;color:#c00;cursor:pointer;">Delete ×</button>
+            <button @click.stop="moveSection(sIdx, -1)" style="position:absolute;top:0.5em;right:3em;background:none;border:none;font-size:1.2em;line-height:1;color:#333;cursor:pointer;" title="Move Up">↑</button>
+            <button @click.stop="moveSection(sIdx, 1)" style="position:absolute;top:0.5em;right:1.9em;background:none;border:none;font-size:1.2em;line-height:1;color:#333;cursor:pointer;" title="Move Down">↓</button>
+            <button @click.stop="removeSection(sIdx)" style="position:absolute;top:0.5em;right:0.75em;background:none;border:none;font-size:1.2em;line-height:1;color:#c00;cursor:pointer;" title="Delete">Delete ×</button>
           </template>
           <div class="questions-in-section">
             <QuestionEditor
@@ -156,6 +160,15 @@ const moveQuestion = (idx, dir) => {
   questions.value.forEach((q, i) => (q.order = i + 1));
 };
 
+const moveSection = (idx, dir) => {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= sections.value.length) return;
+  const temp = sections.value[idx];
+  sections.value[idx] = sections.value[newIdx];
+  sections.value[newIdx] = temp;
+  activeSectionIdx.value = newIdx;
+};
+
 const addSectionAndOpen = () => {
   addSection();
   openSection(sections.value.length - 1);
@@ -171,4 +184,15 @@ const updateQuestion = (idx, question) => {
   questions.value[idx] = question;
 };
 
+const handleSectionDragDrop = ({ from, to }) => {
+  // Reorder sections array based on drag/drop
+  if (typeof from !== 'number' || typeof to !== 'number' || from === to) return;
+  const moved = sections.value.splice(from, 1)[0];
+  sections.value.splice(to, 0, moved);
+  activeSectionIdx.value = to;
+};
 </script>
+
+<style scoped>
+/* Existing styles retained; new drag/drop CSS could be added here if needed */
+</style>
