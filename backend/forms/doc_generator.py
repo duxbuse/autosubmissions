@@ -23,9 +23,41 @@ class DocGenerator:
                     }
                 },
                 {
+                    'name': 'Chronology',
+                    'type': 'section',
+                },
+                {
+                    'name': 'Material Tendered',
+                    'type': 'section',
+                },
+                {
+                    'name': 'PRE-SENTENCE DETENTION CALCULATIONS',
+                    'type': 'section',
+                },
+                {
+                    'name': 'ULTIMATE DISPOSITION',
+                    'type': 'section',
+                },
+                {
+                    'name': 'CIRCUMSTANCES OF THE OFFENDING',
+                    'type': 'section',
+                },
+                {
                     'name': 'Personal Circumstances',
                     'type': 'section',
                     'use_form_sections': True  # Flag to use sections from the form
+                },
+                {
+                    'name': 'SENTENCING CONSIDERATIONS AND MATTERS IN MITIGATION',
+                    'type': 'section',
+                },
+                {
+                    'name': 'DISPOSITION SOUGHT',
+                    'type': 'section',
+                },
+                                {
+                    'name': 'Signature',
+                    'type': 'section',
                 },
             ]
         },

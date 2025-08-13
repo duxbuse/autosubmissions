@@ -176,12 +176,12 @@ def add_section(doc, section_name, subsections_or_config, questions, questions_b
                 if section_questions:
                     if section_name.lower() != "personal circumstances":
                         p = doc.add_paragraph(style='Italic Subheading')
-                        p.add_run(section_name.lower())
+                        p.add_run(section_name)
                     
                     for q in section_questions:
                         answer_obj = answers_by_question.get(q.pk)
                         if answer_obj and str(answer_obj.value).strip():
                             p = doc.add_paragraph(style='Answer Text')
-                            answer_text = f"{answer_number}. {q.text} {str(answer_obj.get_formatted_value())}"
+                            answer_text = f"{answer_number}. {str(answer_obj.get_formatted_value())}"
                             p.add_run(answer_text)
                             answer_number += 1
