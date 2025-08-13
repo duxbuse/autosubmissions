@@ -1,8 +1,7 @@
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
-from docx.enum.style import WD_STYLE_TYPE
-from docx.oxml import parse_xml
+import os
 from io import BytesIO
 from datetime import datetime
 from .models import Submission, Question, Answer
@@ -13,71 +12,23 @@ class DocGenerator:
         'plea_of_guilty': {
             'title': "OUTLINE OF SUBMISSIONS FOR PLEA HEARING",
             'sections': [
-                {
-                    'name': 'title_page',
-                    'type': 'title',
-                    'content': {
-                        'court': "IN THE MAGISTRATES' COURT",
-                        'location': "AT MELBOURNE",
-                        'parties': ["VICTORIA POLICE", "and", "{client_name}"]
-                    }
-                },
-                {
-                    'name': 'Chronology',
-                    'type': 'section',
-                },
-                {
-                    'name': 'Material Tendered',
-                    'type': 'section',
-                },
-                {
-                    'name': 'PRE-SENTENCE DETENTION CALCULATIONS',
-                    'type': 'section',
-                },
-                {
-                    'name': 'ULTIMATE DISPOSITION',
-                    'type': 'section',
-                },
-                {
-                    'name': 'CIRCUMSTANCES OF THE OFFENDING',
-                    'type': 'section',
-                },
-                {
-                    'name': 'Personal Circumstances',
-                    'type': 'section',
-                    'use_form_sections': True  # Flag to use sections from the form
-                },
-                {
-                    'name': 'SENTENCING CONSIDERATIONS AND MATTERS IN MITIGATION',
-                    'type': 'section',
-                },
-                {
-                    'name': 'DISPOSITION SOUGHT',
-                    'type': 'section',
-                },
-                                {
-                    'name': 'Signature',
-                    'type': 'section',
-                },
+                {'name': 'title_page', 'type': 'title', 'content': {'court': "IN THE MAGISTRATES' COURT", 'location': "AT MELBOURNE", 'parties': ["VICTORIA POLICE", "and", "{client_name}"]}},
+                {'name': 'Chronology', 'type': 'section'},
+                {'name': 'Material Tendered', 'type': 'section'},
+                {'name': 'PRE-SENTENCE DETENTION CALCULATIONS', 'type': 'section'},
+                {'name': 'ULTIMATE DISPOSITION', 'type': 'section'},
+                {'name': 'CIRCUMSTANCES OF THE OFFENDING', 'type': 'section'},
+                {'name': 'Personal Circumstances', 'type': 'section', 'use_form_sections': True},
+                {'name': 'SENTENCING CONSIDERATIONS AND MATTERS IN MITIGATION', 'type': 'section'},
+                {'name': 'DISPOSITION SOUGHT', 'type': 'section'},
+                {'name': 'Signature', 'type': 'section', 'content': {'signature': "Ms Courtney Robertson\nLegal Representative for {{name}}", 'image': "signature.png", 'date': datetime.now().strftime('%Y-%m-%d')}},
             ]
         },
         'bail_application': {
             'title': "BAIL APPLICATION SUBMISSION",
             'sections': [
-                {
-                    'name': 'title_page',
-                    'type': 'title',
-                    'content': {
-                        'court': "IN THE MAGISTRATES' COURT",
-                        'location': "AT MELBOURNE",
-                        'parties': ["VICTORIA POLICE", "and", "{client_name}"]
-                    }
-                },
-                {
-                    'name': 'Application Details',
-                    'type': 'section',
-                    'fields': ['Charges', 'Exceptional Circumstances', 'Risk Assessment']
-                }
+                {'name': 'title_page','type':'title','content': {'court': "IN THE MAGISTRATES' COURT", 'location': "AT MELBOURNE", 'parties': ["VICTORIA POLICE","and","{client_name}"]}},
+                {'name': 'Application Details','type':'section','fields':['Charges','Exceptional Circumstances','Risk Assessment']},
             ]
         }
     }
@@ -101,7 +52,7 @@ class DocGenerator:
         # Get all answers for this submission
         answers = Answer.objects.filter(submission=submission)
         # Index answers by question for easy lookup
-        self.answers_by_question = {a.question_id: a for a in answers}
+        self.answers_by_question = {a.question.pk: a for a in answers}
         for q in questions:
             if q.section_id:
                 if q.section_id not in self.questions_by_section:
@@ -143,7 +94,6 @@ class DocGenerator:
             if section['type'] == 'title':
                 self._add_title_page(doc, section['content'], client_name)
             elif section['type'] == 'section':
-                doc.add_page_break()  # Add page break before Personal Circumstances
                 self._add_section(doc, section['name'], section)
 
         # Save to BytesIO
@@ -164,12 +114,42 @@ class DocGenerator:
 
     def _add_section(self, doc, section_name, subsections_or_config):
         """Add a section with subsections and their fields based on the template type"""
+        # Handle the signature section specifically
+        if section_name == 'Signature':
+            content = subsections_or_config.get('content', {})
+            signature_text = content.get('signature','')
+            signature_image = content.get('image','')
+            date_str = datetime.now().strftime('%d/%m/%Y')
+
+            client_name_for_sig = self.submission.client_name or 'client'
+            signature_text = signature_text.replace('{{name}}', client_name_for_sig)
+
+            p = doc.add_paragraph()
+            p.add_run(signature_text)
+            p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+
+            if signature_image:
+                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+                image_path = os.path.join(base_dir, 'static', signature_image)
+                try:
+                    r = p.add_run()
+                    r.add_picture(image_path, width=Inches(1.5))
+                    p = doc.add_paragraph()
+                    p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                except Exception:
+                    pass
+
+            p_date = doc.add_paragraph()
+            p_date.add_run(date_str)
+            p_date.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            return
+
         if self.submission.form.template_type == 'plea_of_guilty':
             from .templates.plea_of_guilty import add_section
-            add_section(doc, section_name, subsections_or_config, self.questions, 
-                       self.questions_by_section, self.answers_by_question, self.sections)
+            add_section(doc, section_name, subsections_or_config, self.questions,
+                        self.questions_by_section, self.answers_by_question, self.sections)
         else:
-            # Use template-defined subsections (for bail application or other templates)
+            answer_number = 1
             for subsection in subsections_or_config:
                 subsection_lower = subsection.lower()
                 matching_questions = [
@@ -177,21 +157,18 @@ class DocGenerator:
                     if subsection_lower in q.text.lower()
                     and self.answers_by_question.get(q.pk)
                 ]
-                
                 if matching_questions:
-                    # All subsection headings should be italic except main sections
                     if subsection.lower() != "personal circumstances":
                         p = doc.add_paragraph(style='Italic Subheading')
-                        p.add_run(subsection.lower())  # Use lowercase for subheadings
+                        p.add_run(subsection.lower())
                     else:
                         p = doc.add_paragraph(style='Section Heading')
                         p.add_run(subsection.upper())
-                    
+
                     for q in matching_questions:
-                        answer_obj = Answer.objects.filter(submission=self.submission, question=q).first()
+                        answer_obj = self.answers_by_question.get(q.pk)
                         if answer_obj and str(answer_obj.value).strip():
                             p = doc.add_paragraph(style='Answer Text')
-                            # Add the number and question text together with the answer
                             answer_text = f"{answer_number}. {q.text} {str(answer_obj.get_formatted_value())}"
                             p.add_run(answer_text)
                             answer_number += 1
